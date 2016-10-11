@@ -198,13 +198,13 @@ def brackets(season):
                              + str(bracket[slot][1] + TEAM_ID_OFFSET) + ") OR (Wteam = " + str(bracket[slot][1] + TEAM_ID_OFFSET) 
                              + " AND Lteam = " + str(bracket[slot][0] + TEAM_ID_OFFSET) + "))")
 
-        print(slot_winner_query)
+        #print(slot_winner_query)
 
         #execute query
-        c.execute(slot_winner_query)
-        results = c.fetchall()
+        #c.execute(slot_winner_query)
+        #results = c.fetchall()
 
-        print(results)
+        #print(results)
         
     #close database connection
     conn.close()
