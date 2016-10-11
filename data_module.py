@@ -131,6 +131,88 @@ def tournament_results(season):
     return mixed_results
 
 
+#TODO
+#set up bracket and fill in the initial matchups for the given season's tournmanet
+def brackets(season):
+    
+    #connect to database
+    conn = sqlite3.connect("./data/database.sqlite")
+    c = conn.cursor()
+     
+    #create query string extract seed information for all tournament teams for the given season
+    seeds_query = "SELECT Seed, Team FROM TourneySeeds WHERE season = " + str(season)
+    
+    #execute query
+    c.execute(seeds_query)
+    results = c.fetchall()
+    
+    #dictionary containing seed,team_id key,value pairs
+    seeded_teams = {}
+
+    #iterate over seeds_query results - build dictionary
+    for seed, team_id in results:
+        seeded_teams[seed] = team_id - TEAM_ID_OFFSET
+
+    #create query string to extract tournament slots/matchups information
+    slots_query = "SELECT Slot, Strongseed, Weakseed FROM TourneySlots WHERE season = " + str(season)
+    
+    #execute query
+    c.execute(slots_query)
+    results = c.fetchall()
+
+    #dictionary with slot,[team1_id, team2_id] key,value pairs
+    #if team1_id/team2_id is unknown for the given matchup, it
+    #instead be the slot of the game that will determine the team 
+    bracket = {}
+
+    #iterate over slots_query results - build dictionary
+    for slot, s_seed, w_seed in results:
+        
+        #if the game participants are known - replace seed with the appropriate team_id
+        if s_seed in seeded_teams:
+            s_seed = seeded_teams[s_seed]
+
+        if w_seed in seeded_teams: 
+            w_seed = seeded_teams[w_seed]
+
+        bracket[slot] = [s_seed, w_seed]
+
+
+
+    true_bracket = {}
+
+    slots = bracket.keys()
+    r1_slots = [slot for slot in slots if len(slot) == 3]
+    r2_slots = [slot for slot in slots if 'R1' in slot]
+    r3_slots = [slot for slot in slots if 'R2' in slot]
+    r4_slots = [slot for slot in slots if 'R3' in slot]
+    r5_slots = [slot for slot in slots if 'R4' in slot]
+    r6_slots = [slot for slot in slots if 'R5' in slot]
+    r7_slots = [slot for slot in slots if 'R6' in slot]
+
+    for slot in r1_slots:
+
+        #create query string to extract winner of the given slot/matchup
+        slot_winner_query = ("SELECT Wteam FROM TourneyCompactResults WHERE season = " + str(season) 
+                             + " AND ((Wteam = " + str(bracket[slot][0] + TEAM_ID_OFFSET) + " AND Lteam = " 
+                             + str(bracket[slot][1] + TEAM_ID_OFFSET) + ") OR (Wteam = " + str(bracket[slot][1] + TEAM_ID_OFFSET) 
+                             + " AND Lteam = " + str(bracket[slot][0] + TEAM_ID_OFFSET) + "))")
+
+        print(slot_winner_query)
+
+        #execute query
+        c.execute(slot_winner_query)
+        results = c.fetchall()
+
+        print(results)
+        
+    #close database connection
+    conn.close()
+
+    #return dictionary containing bracket information
+    return bracket
+
+
 #use other defined fuctions to get data in the desired form
 def data():
 
@@ -163,34 +245,79 @@ def data():
 
 
 #TODO
-#for season in SEASONS: 
+def potential_matchups_data(season):
     
-#    print "--------------------------- " + str(season) + " SEASON ---------------------------"
-
-#    for team_index, stat_averages in enumerate(regular_season_stats(season)):
-
-#        print "\nTeam: " + str(team_index + TEAM_ID_OFFSET)
-
-#        for stat_index, stat_average in enumerate(stat_averages):
-
-#            print str(STATS[stat_index]) + "/game : " + str(stat_average)
-
-#TODO
-#for season in SEASONS[:-1]:
-        
-#    print "--------------------------- " + str(season) + " SEASON ---------------------------"
-
-#    for team1, team2, label in tournament_results(season):
-
-#        print str(team1) + " - " + str(team2) + " : " + str(label)
-
-#TODO
-#x_data, y_data = data()
-
-#for season_x_data, season_y_data in zip(x_data, y_data):
+    #connect to database
+    conn = sqlite3.connect("./data/database.sqlite")
+    c = conn.cursor()
+     
+    #create query string extract seed information for all tournament teams for the given season
+    seeds_query = "SELECT Team FROM TourneySeeds WHERE season = " + str(season)
     
-#    for game_data, label in zip(season_x_data, season_y_data):
-        
-        #print str(label) + " - " + str(game_data) + "\n"
+    #execute query
+    c.execute(seeds_query)
+    results = c.fetchall()
 
+    #close database connection
+    conn.close()
+
+    #
+    matchups_matrix = []
+    for i in range(len(results)): matchups_matrix.append([0]*len(results))
+
+    team_indexes = {}
+
+    for index, team_id in enumerate(results):
+        
+        team_indexes[team_id[0] - TEAM_ID_OFFSET] = index
+
+
+    
+
+
+######################################## DEBUGGING OUTPUT #########################################TODO
+
+potential_matchups_data(2015)
+
+if False:
+
+    for season in SEASONS: 
+        
+        print("--------------------------- " + str(season) + " SEASON ---------------------------")
+
+        for team_index, stat_averages in enumerate(regular_season_stats(season)):
+
+            print("\nTeam: " + str(team_index + TEAM_ID_OFFSET))
+
+            for stat_index, stat_average in enumerate(stat_averages):
+
+                print(str(STATS[stat_index]) + "/game : " + str(stat_average))
+
+if False:
+
+    for season in SEASONS[:-1]:
+        
+        print("--------------------------- " + str(season) + " SEASON ---------------------------")
+
+        for team1, team2, label in tournament_results(season):
+
+            print(str(team1) + " - " + str(team2) + " : " + str(label))
+
+if True:
+
+    bracket = brackets(2015)
+
+    #for slot in bracket.keys():
+
+    #    print(str(slot) + ": " + str(bracket[slot][0]) + " vs. " + str(bracket[slot][1]))
+
+if False:
+
+    x_data, y_data = data()
+
+    for season_x_data, season_y_data in zip(x_data, y_data):
+    
+        for game_data, label in zip(season_x_data, season_y_data):
+        
+            print(str(label) + " - " + str(game_data) + "\n")
 
