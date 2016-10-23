@@ -12,11 +12,31 @@ TEAM_ID_OFFSET = 1101
 #number of teams
 NUM_TEAMS = 364
 
+#initialize list of team names
+TEAMS = ["N/A"]*NUM_TEAMS
+
+#connect to database
+conn = sqlite3.connect("./data/database.sqlite")
+c = conn.cursor()
+
+#query to extract team information
+team_name_query = "SELECT * FROM TEAMS"
+
+#execute team_name_query
+c.execute(team_name_query)
+results = c.fetchall()
+
+#close database connection
+conn.close() 
+
+#add team_name info to TEAMS
+for team_id, team_name in results: TEAMS[team_id - TEAM_ID_OFFSET] = team_name
+
 
 #extract the per-game stat averages for the relevant stats for each team for a given season
 def regular_season_stats(season):
 
-    #list of games played for each team
+    #list of number of games played for each team
     game_totals = [0]*NUM_TEAMS
 
     #list of stat total lists for each team
@@ -94,7 +114,7 @@ def regular_season_stats(season):
             #divide all team stats by the number of games that team played to obtain stat averages
             stat_averages[team_index] = [float(stat_total) / game_totals[team_index] for stat_total in stat_totals[team_index]]
 
-    # return the stat averages for all teams
+    #return the stat averages for all teams
     return stat_averages
 
 
@@ -106,7 +126,7 @@ def tournament_results(season):
     c = conn.cursor()
      
     #create query string to extract winning and losing team id's for each tournament game for the given season
-    query = "SELECT Wteam, Lteam FROM TourneyDetailedResults WHERE season = " + str(season)
+    query = "SELECT Wteam, Lteam FROM TourneyCompactResults WHERE season = " + str(season)
     
     #execute query
     c.execute(query)
@@ -131,8 +151,8 @@ def tournament_results(season):
     return mixed_results
 
 
-#TODO
-#set up bracket and fill in the initial matchups for the given season's tournmanet
+#set up bracket w/ the initial matchups for the given season's tournament
+#return this initial bracket along with actual tournament results
 def brackets(season):
     
     #connect to database
@@ -161,8 +181,8 @@ def brackets(season):
     results = c.fetchall()
 
     #dictionary with slot,[team1_id, team2_id] key,value pairs
-    #if team1_id/team2_id is unknown for the given matchup, it
-    #instead be the slot of the game that will determine the team 
+    #if team1_id/team2_id is unknown for the given matchup, it will
+    #instead be the slot of the game that will determine the team
     bracket = {}
 
     #iterate over slots_query results - build dictionary
@@ -177,107 +197,130 @@ def brackets(season):
 
         bracket[slot] = [s_seed, w_seed]
 
+    #initialize dictionary of (team,wins) key,value pairs
+    games_won = {}
+    for team in seeded_teams.values(): games_won[team] = 0
 
+    games_won_query = ("SELECT Wteam, COUNT(*) FROM TourneyCompactResults WHERE season = " 
+                       + str(season) + " GROUP BY Wteam")
 
-    true_bracket = {}
-
-    slots = bracket.keys()
-    r1_slots = [slot for slot in slots if len(slot) == 3]
-    r2_slots = [slot for slot in slots if 'R1' in slot]
-    r3_slots = [slot for slot in slots if 'R2' in slot]
-    r4_slots = [slot for slot in slots if 'R3' in slot]
-    r5_slots = [slot for slot in slots if 'R4' in slot]
-    r6_slots = [slot for slot in slots if 'R5' in slot]
-    r7_slots = [slot for slot in slots if 'R6' in slot]
-
-    for slot in r1_slots:
-
-        #create query string to extract winner of the given slot/matchup
-        slot_winner_query = ("SELECT Wteam FROM TourneyCompactResults WHERE season = " + str(season) 
-                             + " AND ((Wteam = " + str(bracket[slot][0] + TEAM_ID_OFFSET) + " AND Lteam = " 
-                             + str(bracket[slot][1] + TEAM_ID_OFFSET) + ") OR (Wteam = " + str(bracket[slot][1] + TEAM_ID_OFFSET) 
-                             + " AND Lteam = " + str(bracket[slot][0] + TEAM_ID_OFFSET) + "))")
-
-        #print(slot_winner_query)
-
-        #execute query
-        #c.execute(slot_winner_query)
-        #results = c.fetchall()
-
-        #print(results)
-        
-    #close database connection
-    conn.close()
-
-    #return dictionary containing bracket information
-    return bracket
-
-
-#use other defined fuctions to get data in the desired form
-def data():
-
-    #data lists
-    x_data = []
-    y_data = []
-
-    #iterate over seasons calling defined functions to extract data
-    for season in SEASONS:
-    
-        #season data lists
-        season_x_data = []
-        season_y_data = []
-
-        #extract all stats once to avoid redundant queries
-        season_stats = regular_season_stats(season)
-
-        #iterate over tournament games, creating data and label lists
-        for wteam_id, lteam_id, label in tournament_results(season):
-
-            season_x_data.append(season_stats[wteam_id - TEAM_ID_OFFSET] + season_stats[lteam_id - TEAM_ID_OFFSET])
-            season_y_data.append(label)
-
-        #add season data to return list
-        x_data.append(season_x_data)
-        y_data.append(season_y_data)  
-
-    #return data
-    return x_data, y_data
-
-
-#TODO
-def potential_matchups_data(season):
-    
-    #connect to database
-    conn = sqlite3.connect("./data/database.sqlite")
-    c = conn.cursor()
-     
-    #create query string extract seed information for all tournament teams for the given season
-    seeds_query = "SELECT Team FROM TourneySeeds WHERE season = " + str(season)
-    
-    #execute query
-    c.execute(seeds_query)
+    #execute games_won query
+    c.execute(games_won_query)
     results = c.fetchall()
 
     #close database connection
     conn.close()
 
-    #
-    matchups_matrix = []
-    for i in range(len(results)): matchups_matrix.append([0]*len(results))
-
-    team_indexes = {}
-
-    for index, team_id in enumerate(results):
-        
-        team_indexes[team_id[0] - TEAM_ID_OFFSET] = index
-
-
+    #set values of games_won w/ query results
+    for team_id, wins in results:
+        games_won[team_id - TEAM_ID_OFFSET] = wins
     
+    #results of bracket containing (slot,winner) key,value pairs
+    bracket_results = {}
+
+    #all slot names
+    slots = bracket.keys()
+
+    #create list of slots grouped by tournament round
+    rounds = []
+    rounds.append([slot for slot in slots if len(slot) == 3])
+    rounds.append([slot for slot in slots if 'R1' in slot])
+    rounds.append([slot for slot in slots if 'R2' in slot])
+    rounds.append([slot for slot in slots if 'R3' in slot])
+    rounds.append([slot for slot in slots if 'R4' in slot])
+    rounds.append([slot for slot in slots if 'R5' in slot])
+    rounds.append([slot for slot in slots if 'R6' in slot])
+
+    #teams that participated in an additional tournament "round"
+    play_in_teams = []
+
+    for slot in rounds[0]:
+        play_in_teams.append(bracket[slot][0])
+        play_in_teams.append(bracket[slot][1])
+
+    #iterate over tournament rounds, updating game winners
+    for round_slots in rounds:
+
+        #iterate over round games, determining winner of each
+        for slot in round_slots:
+
+            #game participants
+            team_1 = bracket[slot][0]
+            team_2 = bracket[slot][1]
+
+            #if the game depends on a previous game's results, get those results
+            if team_1 not in range(NUM_TEAMS): team_1 = bracket_results[team_1][0]
+            if team_2 not in range(NUM_TEAMS): team_2 = bracket_results[team_2][0]
+
+            #win totals for game participants
+            team_1_wins = games_won[team_1]
+            team_2_wins = games_won[team_2]
+
+            #necessary adjustment for play_in_teams
+            if team_1 in play_in_teams: team_1_wins -= 1
+            if team_2 in play_in_teams: team_2_wins -= 1
+
+            #determine game winner and update bracket results accordingly
+            if (team_1_wins > team_2_wins): bracket_results[slot] = [team_1]
+            else: bracket_results[slot] = [team_2]
+
+    #iterate over games
+    for slot in slots:
+
+        slot_winner = bracket_results[slot][0]
+
+        #if a play-in team won the game
+        if slot_winner in play_in_teams:
+
+            #add other play-in team to game winners list for scoring
+            play_in_index = play_in_teams.index(slot_winner)
+
+            if play_in_index % 2 == 0: bracket_results[slot].append(play_in_teams[play_in_index + 1])
+            else: bracket_results[slot].append(play_in_teams[play_in_index - 1])
+
+    #return dictionaries containing bracket information
+    return bracket, bracket_results
 
 
-######################################## DEBUGGING OUTPUT #########################################TODO
+#use other defined fuctions to get data in the desired form
+def data(test_season):
 
-potential_matchups_data(2015)
+    x_train = []
+    y_train = []
+
+    x_test = []
+    y_test = []
+
+    #iterate over seasons calling defined functions to extract data
+    for season in SEASONS:
+    
+        #extract all stats once to avoid redundant queries
+        season_stats = regular_season_stats(season)
+
+        #build test set
+        if season == test_season:
+
+            #iterate over tournament games, creating data and label lists
+            for wteam_id, lteam_id, label in tournament_results(season):
+
+                x_test.append(season_stats[wteam_id - TEAM_ID_OFFSET] + season_stats[lteam_id - TEAM_ID_OFFSET])
+                y_test.append(label)
+    
+        #build train set
+        else:
+
+            #iterate over tournament games, creating data and label lists
+            for wteam_id, lteam_id, label in tournament_results(season):
+
+                x_train.append(season_stats[wteam_id - TEAM_ID_OFFSET] + season_stats[lteam_id - TEAM_ID_OFFSET])
+                y_train.append(label)
+
+    #return data
+    return x_train, y_train, x_test, y_test    
+
+
+
+#TODO####################################### DEBUGGING OUTPUT #########################################
 
 if False:
 
@@ -303,21 +346,29 @@ if False:
 
             print(str(team1) + " - " + str(team2) + " : " + str(label))
 
-if True:
+if False:
 
-    bracket = brackets(2015)
+    bracket, true_bracket = brackets(2015)
 
-    #for slot in bracket.keys():
+    for slot in bracket.keys():
 
-    #    print(str(slot) + ": " + str(bracket[slot][0]) + " vs. " + str(bracket[slot][1]))
+        print(str(slot) + ": " + str(bracket[slot][0]) + " vs. " + str(bracket[slot][1]))
+
+    print("\n")
+
+    for slot in true_bracket.keys():
+
+        print(str(slot) + ": ", end = "")
+        
+        for winner in true_bracket[slot]:
+
+            print(TEAMS[winner] + ", ", end = "")
+
+        print("")
 
 if False:
 
-    x_data, y_data = data()
+    x_train, y_train, x_test, y_test = data()
 
-    for season_x_data, season_y_data in zip(x_data, y_data):
-    
-        for game_data, label in zip(season_x_data, season_y_data):
-        
-            print(str(label) + " - " + str(game_data) + "\n")
+    #TODO
 
