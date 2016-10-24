@@ -1,27 +1,44 @@
-import data_module
 import numpy as np
 
 #calculate the "accuracy" metric of some predictions given lists of the predictions and the true values
 def accuracy(predicted_values, true_values):
 
-    #TODO rounding
+    #for pv, tv in zip(predicted_values, true_values):
+
+    #    print(str(pv) + " : " + str(tv))
+
+    #TODO rounding and fix the return list thingy dumb thing
+
     #create numpy arrays of true values and rounded predicted values (>= .5 --> 1, 0 otherwise)
     predicted_values = np.array(predicted_values).round()
     true_values = np.array(true_values)
-
+    
     #calculate and return accuracy = number of correctly predicted values / number of values
-    return (predicted_values == true_values).sum() / len(predicted_values)
+    return (predicted_values[:, 0] == true_values).sum() / len(predicted_values)
 
 
 #calculate the "LogLoss" metric of some predictions given lists of the predictions and the true values
 def log_loss(predicted_values, true_values):
     
+    #convert input parameters to numpy arrays
+    predicted_values = np.asarray(predicted_values)[:, 0]
+    true_values = np.asarray(true_values)
+
+    #offset from 0 and 1 for setting min/max probabilities
+    offset = .1 #TODO
+    
+    #bound probabilites at (offset, 1-offset)
+    for predicted_value_index in range(len(predicted_values)):
+
+        if predicted_values[predicted_value_index] <= 0: predicted_values[predicted_value_index] = offset
+        if predicted_values[predicted_value_index] >= 1: predicted_values[predicted_value_index] = 1 - offset
+
     #calculate numerator of LogLoss
-    ll_n = sum(true_values * np.log(predicted_values) + 
-               np.subtract(1, true_values) * np.log(np.subtract(1, predicted_values)))
+    ll_n = (sum(true_values * np.log(predicted_values) + 
+               np.subtract(1, true_values) * np.log(np.subtract(1, predicted_values))))
     
     #calculate and return LogLoss
-    return (-ll_n) / len(true_values)
+    return (-ll_n) / len(predicted_values)
 
 
 #score a given bracket using ESPN's tournament challenge scoring system

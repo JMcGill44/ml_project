@@ -1,8 +1,12 @@
 import data_module
 import metrics
+import linear_regression
+import random_forest
+
 import numpy as np
-from sklearn import linear_model
 import matplotlib.pyplot as plt
+
+from sklearn import linear_model
 
 #number of brackets to generate for bracket scoring
 NUM_BRACKETS = 1000
@@ -55,6 +59,10 @@ def create_and_score_bracket(model, season):
                 #predict game result
                 p = model.predict(np.asarray(season_stats[team_1] + season_stats[team_2]).reshape(1, -1))
 
+                #edge cases for probabilities
+                if (p < 0): p = 0
+                if (p > 1): p = 1
+
                 #flip weighted coin
                 pred = np.random.binomial(1, p)
 
@@ -83,19 +91,49 @@ test_season = 2015
 #get the train/test data
 x_train, y_train, x_test, y_test = data_module.data(test_season)
 
-lm = linear_model.LinearRegression()
-lm.fit(x_train, y_train)
-y_pred = lm.predict(x_test)
+if True:
 
-print("Accuracy: " + str(metrics.accuracy(y_pred, y_test)))
-print("LogLoss:  " + str(metrics.log_loss(y_pred, y_test)))
+    rf = random_forest.RegressionTree(3, 5)
+    rf.fit(x_train, y_train)
+    y_pred = rf.predict(x_test)
 
-best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(lm, test_season)
+    rf.print_tree()
 
-print("Best Score: " + str(best_bracket_score))
-print("Avg Score : " + str(avg_bracket_score))
+    print("Accuracy: " + str(metrics.accuracy(y_pred, y_test)))
+    print("LogLoss:  " + str(metrics.log_loss(y_pred, y_test)))
 
-for game in sorted(best_bracket):
+    best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(rf, test_season)
 
-    print(str(game) + " : " + str(data_module.TEAMS[best_bracket[game]]))
+    print("Best Score: " + str(best_bracket_score))
+    print("Avg Score : " + str(avg_bracket_score))
+
+    #for game in sorted(best_bracket):
+
+    #    print(str(game) + " : " + str(data_module.TEAMS[best_bracket[game]]))
+
+
+if False:
+
+    iters = 300
+    alpha = .00001
+
+    lm = linear_regression.Linear_Regression(alpha = alpha, iterations = iters)
+    mse_values = lm.fit(x_train, y_train)
+    y_pred = lm.predict(x_test)
+
+    print("Accuracy: " + str(metrics.accuracy(y_pred, y_test)))
+    print("LogLoss:  " + str(metrics.log_loss(y_pred, y_test)))
+
+    best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(lm, test_season)
+
+    print("Best Score: " + str(best_bracket_score))
+    print("Avg Score : " + str(avg_bracket_score))
+
+    #for game in sorted(best_bracket):
+
+    #    print(str(game) + " : " + str(data_module.TEAMS[best_bracket[game]]))
+
+    #plt.plot(mse_values)
+    #plt.ylim([0.24, 0.3])
+    #plt.show()
 
