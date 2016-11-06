@@ -4,7 +4,6 @@ import numpy as np
 def accuracy(predicted_values, true_values):
 
     #for pv, tv in zip(predicted_values, true_values):
-
     #    print(str(pv) + " : " + str(tv))
 
     #TODO rounding and fix the return list thingy dumb thing
@@ -14,7 +13,7 @@ def accuracy(predicted_values, true_values):
     true_values = np.array(true_values)
     
     #calculate and return accuracy = number of correctly predicted values / number of values
-    return (predicted_values[:, 0] == true_values).sum() / len(predicted_values)
+    return (predicted_values[:, 0] == true_values[:, 0]).sum() / len(predicted_values)
 
 
 #calculate the "LogLoss" metric of some predictions given lists of the predictions and the true values
@@ -22,7 +21,10 @@ def log_loss(predicted_values, true_values):
     
     #convert input parameters to numpy arrays
     predicted_values = np.asarray(predicted_values)[:, 0]
-    true_values = np.asarray(true_values)
+    true_values = np.asarray(true_values)[:, 0]
+
+    #print(predicted_values)
+    #print(true_values)
 
     #offset from 0 and 1 for setting min/max probabilities
     offset = .1 #TODO
@@ -32,6 +34,9 @@ def log_loss(predicted_values, true_values):
 
         if predicted_values[predicted_value_index] <= 0: predicted_values[predicted_value_index] = offset
         if predicted_values[predicted_value_index] >= 1: predicted_values[predicted_value_index] = 1 - offset
+
+    #print(np.log(predicted_values))
+    #print(np.subtract(1, true_values) * np.log(np.subtract(1, predicted_values)))
 
     #calculate numerator of LogLoss
     ll_n = (sum(true_values * np.log(predicted_values) + 

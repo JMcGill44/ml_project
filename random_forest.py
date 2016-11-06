@@ -82,9 +82,7 @@ class RegressionTree:
         #print("p_right" + str(p_right))
         #print("n_right" + str(n_right))
 
-        if p_left + n_left == 0 or p_right + n_right == 0:
-
-            return 10000
+        if p_left + n_left == 0 or p_right + n_right == 0: return 10000
     
         return (((p_left + n_left) / num_examples)*self.gini([(p_left / (p_left + n_left)), (n_left / (p_left + n_left))]) 
               + ((p_right + n_right) / num_examples)*self.gini([(p_right / (p_right + n_right)), (n_right / (p_right + n_right))]))
@@ -102,7 +100,8 @@ class RegressionTree:
 
             #test_examples = [[0], [0], [1], [0], [1], [1], [1], [0], [0], [0]]
             #test_labels = [1, 0, 0, 1, 1, 1, 0, 0, 1, 1]
-            
+        
+            #TODO determine index of best attribute    
             min_split_index = 0
             min_split_val = 0
             min_gini_remainder = np.inf
@@ -118,7 +117,6 @@ class RegressionTree:
                         min_split_val = examples[row_index][column_index]
                         min_gini_remainder = gr
         
-            #TODO determine index of best attribute
             best = min_split_index    
             best_split = min_split_val   
                          
