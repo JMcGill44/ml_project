@@ -95,18 +95,18 @@ test_season = 2015
 x_train, y_train, x_test, y_test = data_module.data(test_season)
 
 
-if False:
+if True:
 
     iters = 100
     alpha = .00001
 
-    print("\nRandom")
-    print("Accuracy: .5")
-    print("Log Loss: " + str(metrics.log_loss(np.asarray([.5]*len(y_test)).reshape(len(y_test), 1), np.asarray(y_test).reshape(len(y_test), 1))))
+    #print("\nRandom")
+    #print("Accuracy: .5")
+    #print("Log Loss: " + str(metrics.log_loss(np.asarray([.5]*len(y_test)).reshape(len(y_test), 1), np.asarray(y_test).reshape(len(y_test), 1))))
 
 
     lm = linear_regression.Linear_Regression(alpha = alpha, iterations = iters)
-    train_errors, test_errors = lm.test_fit(x_train, y_train, x_test, y_test)
+    lm.fit(x_train, y_train)
     y_pred = lm.predict(x_test)
 
     #lm = linear_model.LinearRegression()
@@ -133,7 +133,7 @@ if False:
     #plt.ylim([0.24, 0.3])
     #plt.show()
 
-if True:
+if False:
 
     rf = random_forest.RegressionTree(3, 0)
     rf.fit(x_train, y_train)

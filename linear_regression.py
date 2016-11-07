@@ -21,29 +21,23 @@ class Linear_Regression:
         #add column of ones for intercept weight
         X = np.c_[np.ones(X.shape[0]), X]
 
+        #number of columns of X
+        x_cols = X.shape[1]
+
         #initialize weights
-        self.weights = np.zeros((X.shape[1], 1))
-        
+        self.weights = np.zeros((x_cols, 1))
+
         #learning iterations
         for i in range(self.iterations):
 
-            if i % 50 == 0: print(i)
-
-            #example errors list
-            errors = []
-    
             #iterate over data examples (X rows)
             for example_index, example in enumerate(X):
 
-                #compute example error using current weights
-                errors.append(example.dot(self.weights) - y[example_index])
+                #example error
+                error = example.dot(self.weights) - y[example_index]
 
-                #iterate over attributes of example
-                for attribute_index, attribute in enumerate(example):
-
-                    #update weights
-                    weight_adjustment = self.alpha * (errors[example_index] * example[attribute_index])
-                    self.weights[attribute_index] = self.weights[attribute_index] - weight_adjustment
+                #update weights using error and alpha
+                self.weights -= self.alpha * (error * example).reshape(x_cols, 1)
 
     
     def test_fit(self, x_train, y_train, x_test, y_test):
@@ -58,8 +52,11 @@ class Linear_Regression:
         x_train = np.c_[np.ones(x_train.shape[0]), x_train]
         x_test = np.c_[np.ones(x_test.shape[0]), x_test]
 
+        #number of columns of X
+        x_cols = x_train.shape[1]
+
         #initialize weights
-        self.weights = np.zeros((x_train.shape[1], 1))
+        self.weights = np.zeros((x_cols, 1))
         
         #lists of iteration errors to return
         train_mse_values = []
@@ -74,15 +71,27 @@ class Linear_Regression:
         #learning iterations
         for i in range(self.iterations):
 
-            #if i % 50 == 0: print(i)
+            #iterate over data examples (X rows)
+            for example_index, example in enumerate(x_train):
+
+                #example error
+                error = example.dot(self.weights) - y_train[example_index]
+
+                #update weights using error and alpha
+                self.weights -= self.alpha * (error * example).reshape(x_cols, 1)
+
+
+
+
+        #learning iterations
+        for i in range(self.iterations):
 
             #example errors list
             train_errors = []
             test_errors = []
 
-
             #print("\nTest Errors")    
-            
+
             for test_example_index, test_example in enumerate(x_test):
 
                 test_errors.append(test_example.dot(self.weights) - y_test[test_example_index])
