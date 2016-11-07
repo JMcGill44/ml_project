@@ -33,7 +33,7 @@ def create_and_score_bracket(model, season):
     rounds.append([slot for slot in slots if 'R6' in slot])
 
     #initialize total score and best score/bracket w/ appropriate values
-    score_total = 0    
+    score_total = 0
     best_score = 0
     best_bracket = {}
 
@@ -57,8 +57,8 @@ def create_and_score_bracket(model, season):
 
                 #if the game depends on a previous game's results, get those results
                 if team_1 not in range(data_module.NUM_TEAMS): team_1 = predicted_bracket[team_1]
-                if team_2 not in range(data_module.NUM_TEAMS): team_2 = predicted_bracket[team_2]            
-            
+                if team_2 not in range(data_module.NUM_TEAMS): team_2 = predicted_bracket[team_2]
+
                 #predict game result
                 p = model.predict(np.asarray(season_stats[team_1] + season_stats[team_2]).reshape(1, -1))
 
@@ -86,7 +86,7 @@ def create_and_score_bracket(model, season):
 
     #return best predicted bracket, the corresponding bracket score, and average bracket score
     return best_bracket, best_score, (float(score_total) / NUM_BRACKETS)
-    
+
 
 ######################################TODO######################################
 test_season = 2015
@@ -97,41 +97,45 @@ x_train, y_train, x_test, y_test = data_module.data(test_season)
 
 if True:
 
-    iters = 100
+    iters = 1000
     alpha = .00001
+    accuracies = []
+    log_losses = []
+    for test_season in data_module.SEASONS[:-1]:
+        print(test_season)
+        x_train, y_train, x_test, y_test = data_module.data(test_season)
 
-    #print("\nRandom")
-    #print("Accuracy: .5")
-    #print("Log Loss: " + str(metrics.log_loss(np.asarray([.5]*len(y_test)).reshape(len(y_test), 1), np.asarray(y_test).reshape(len(y_test), 1))))
+        lm = linear_regression.Linear_Regression(alpha = alpha, iterations = iters)
+        train_errors, test_errors = lm.test_fit(x_train, y_train, x_test, y_test)
+        y_pred = lm.predict(x_test)
 
+        accuracies.append(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1)))
+        log_losses.append(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1)))
+        #lm = linear_model.LinearRegression()
+        #lm.fit(x_train, y_train)
+        #y_pred = np.asarray(lm.predict(x_test)).reshape(len(y_test), 1)
 
-    lm = linear_regression.Linear_Regression(alpha = alpha, iterations = iters)
-    lm.fit(x_train, y_train)
-    y_pred = lm.predict(x_test)
+        #print(y_pred)
 
-    #lm = linear_model.LinearRegression()
-    #lm.fit(x_train, y_train)
-    #y_pred = np.asarray(lm.predict(x_test)).reshape(len(y_test), 1)
+        print("\nLinear Model")
+        print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
+        print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
 
-    #print(y_pred)
+        best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(lm, test_season)
 
-    print("\nLinear Model")
-    print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
-    print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
+        print("Best Score: " + str(best_bracket_score))
+        print("Avg Score : " + str(avg_bracket_score))
 
-    best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(lm, test_season)
+        #for game in sorted(best_bracket):
 
-    print("Best Score: " + str(best_bracket_score))
-    print("Avg Score : " + str(avg_bracket_score))
+        #    print(str(game) + " : " + str(data_module.TEAMS[best_bracket[game]]))
 
-    #for game in sorted(best_bracket):
-
-    #    print(str(game) + " : " + str(data_module.TEAMS[best_bracket[game]]))
-
-    #plt.plot(train_errors)
-    #plt.plot(test_errors)
-    #plt.ylim([0.24, 0.3])
-    #plt.show()
+        #plt.plot(train_errors)
+        #plt.plot(test_errors)
+        #plt.ylim([0.24, 0.3])
+        #plt.show()
+    print("Average Accuracy: " + str(float(sum(accuracies))/len(accuracies)))
+    print("Average Log Loss: " + str(float(sum(log_losses))/len(log_losses)))
 
 if False:
 

@@ -1,8 +1,9 @@
 import sqlite3
+import numpy as np
 
 #stats to consider
-STATS = ['score', 'ftm', 'or', 'dr', 'ast', 'to', 'stl', 'blk']
-
+#STATS = ['score', 'ftm', 'or', 'dr', 'ast', 'to', 'stl', 'blk']
+STATS = ['score', 'fgm', 'fga', 'fgm3', 'fga3', 'ftm', 'fta', 'or', 'dr', 'ast', 'to', 'stl', 'blk', 'pf']
 #seasons for which data exists
 SEASONS = range(2003, 2017)
 
@@ -27,7 +28,7 @@ c.execute(team_name_query)
 results = c.fetchall()
 
 #close database connection
-conn.close() 
+conn.close()
 
 #add team_name info to TEAMS
 for team_id, team_name in results: TEAMS[team_id - TEAM_ID_OFFSET] = team_name
@@ -50,7 +51,7 @@ def regular_season_stats(season):
     #connect to database
     conn = sqlite3.connect("./data/database.sqlite")
     c = conn.cursor()
-    
+
     #create query strings to extract team stat and game totals
     w_query = "SELECT Wteam, "
     l_query = "SELECT Lteam, "
@@ -61,11 +62,11 @@ def regular_season_stats(season):
 
     w_query += "count(*) FROM RegularSeasonDetailedResults WHERE season = " + str(season) + " GROUP BY wteam"
     l_query += "count(*) FROM RegularSeasonDetailedResults WHERE season = " + str(season) + " GROUP BY lteam"
-    
+
     #execute win query - extract information from games won by each time
     c.execute(w_query)
     w_results = c.fetchall()
-   
+
     #iterate over w_query results - one for each team that won at least one game
     for result in w_results:
 
@@ -77,7 +78,7 @@ def regular_season_stats(season):
 
         #add number of games won to game totals list
         game_totals[team_index] = result_list[-1]
-        
+
         #set stat totals to the stats from games won
         stat_totals[team_index] = result_list[1:-1]
 
@@ -86,7 +87,7 @@ def regular_season_stats(season):
     l_results = c.fetchall()
 
     #close database connection
-    conn.close() 
+    conn.close()
 
     #iterate over l_query results - one for each team that lost at least one game
     for result in l_results:
@@ -101,9 +102,9 @@ def regular_season_stats(season):
         game_totals[team_index] += result_list[-1]
 
         #iterate over result stats, adding them to the appropriate stat totals
-        for stat_index, stat in enumerate(result_list[1:-1]): 
+        for stat_index, stat in enumerate(result_list[1:-1]):
 
-            stat_totals[team_index][stat_index] += stat            
+            stat_totals[team_index][stat_index] += stat
 
     #calculate stat averages using extracted stat and game totals
     for team_index in range(NUM_TEAMS):
@@ -113,6 +114,14 @@ def regular_season_stats(season):
 
             #divide all team stats by the number of games that team played to obtain stat averages
             stat_averages[team_index] = [float(stat_total) / game_totals[team_index] for stat_total in stat_totals[team_index]]
+
+    #normalize the stat averages for each team
+    stat_averages = np.asarray(stat_averages)
+    for stat in range(stat_averages.shape[1]):
+        mean = np.mean(stat_averages[:, stat])
+        std = np.std(stat_averages[:, stat])
+        stat_averages[:, stat] = (stat_averages[:, stat] - mean) / std
+    stat_averages = stat_averages.tolist()
 
     #return the stat averages for all teams
     return stat_averages
@@ -124,21 +133,21 @@ def tournament_results(season):
     #connect to database
     conn = sqlite3.connect("./data/database.sqlite")
     c = conn.cursor()
-     
+
     #create query string to extract winning and losing team id's for each tournament game for the given season
     query = "SELECT Wteam, Lteam FROM TourneyCompactResults WHERE season = " + str(season)
-    
+
     #execute query
     c.execute(query)
     results = c.fetchall()
 
     #close database connection
     conn.close()
-    
+
     #mix up order of teams so winning team isn't always 1st and label isn't always 1
     mixed_results = []
 
-    #flip order of every other result and add appropriate data label 
+    #flip order of every other result and add appropriate data label
     for results_index, result in enumerate(results):
 
         #even results - flip order of teams, add '0' label to indicate that the 1st team lost
@@ -154,18 +163,18 @@ def tournament_results(season):
 #set up bracket w/ the initial matchups for the given season's tournament
 #return this initial bracket along with actual tournament results
 def brackets(season):
-    
+
     #connect to database
     conn = sqlite3.connect("./data/database.sqlite")
     c = conn.cursor()
-     
+
     #create query string extract seed information for all tournament teams for the given season
     seeds_query = "SELECT Seed, Team FROM TourneySeeds WHERE season = " + str(season)
-    
+
     #execute query
     c.execute(seeds_query)
     results = c.fetchall()
-    
+
     #dictionary containing seed,team_id key,value pairs
     seeded_teams = {}
 
@@ -175,7 +184,7 @@ def brackets(season):
 
     #create query string to extract tournament slots/matchups information
     slots_query = "SELECT Slot, Strongseed, Weakseed FROM TourneySlots WHERE season = " + str(season)
-    
+
     #execute query
     c.execute(slots_query)
     results = c.fetchall()
@@ -187,12 +196,12 @@ def brackets(season):
 
     #iterate over slots_query results - build dictionary
     for slot, s_seed, w_seed in results:
-        
+
         #if the game participants are known - replace seed with the appropriate team_id
         if s_seed in seeded_teams:
             s_seed = seeded_teams[s_seed]
 
-        if w_seed in seeded_teams: 
+        if w_seed in seeded_teams:
             w_seed = seeded_teams[w_seed]
 
         bracket[slot] = [s_seed, w_seed]
@@ -201,7 +210,7 @@ def brackets(season):
     games_won = {}
     for team in seeded_teams.values(): games_won[team] = 0
 
-    games_won_query = ("SELECT Wteam, COUNT(*) FROM TourneyCompactResults WHERE season = " 
+    games_won_query = ("SELECT Wteam, COUNT(*) FROM TourneyCompactResults WHERE season = "
                        + str(season) + " GROUP BY Wteam")
 
     #execute games_won query
@@ -214,7 +223,7 @@ def brackets(season):
     #set values of games_won w/ query results
     for team_id, wins in results:
         games_won[team_id - TEAM_ID_OFFSET] = wins
-    
+
     #results of bracket containing (slot,winner) key,value pairs
     bracket_results = {}
 
@@ -293,7 +302,7 @@ def data(test_season):
 
     #iterate over seasons calling defined functions to extract data
     for season in SEASONS:
-    
+
         #extract all stats once to avoid redundant queries
         season_stats = regular_season_stats(season)
 
@@ -305,7 +314,7 @@ def data(test_season):
 
                 x_test.append(season_stats[wteam_id - TEAM_ID_OFFSET] + season_stats[lteam_id - TEAM_ID_OFFSET])
                 y_test.append(label)
-    
+
         #build train set
         else:
 
@@ -316,7 +325,7 @@ def data(test_season):
                 y_train.append(label)
 
     #return data
-    return x_train, y_train, x_test, y_test    
+    return x_train, y_train, x_test, y_test
 
 
 
@@ -324,8 +333,8 @@ def data(test_season):
 
 if False:
 
-    for season in SEASONS: 
-        
+    for season in SEASONS:
+
         print("--------------------------- " + str(season) + " SEASON ---------------------------")
 
         for team_index, stat_averages in enumerate(regular_season_stats(season)):
@@ -339,7 +348,7 @@ if False:
 if False:
 
     for season in SEASONS[:-1]:
-        
+
         print("--------------------------- " + str(season) + " SEASON ---------------------------")
 
         for team1, team2, label in tournament_results(season):
@@ -359,7 +368,7 @@ if False:
     for slot in true_bracket.keys():
 
         print(str(slot) + ": ", end = "")
-        
+
         for winner in true_bracket[slot]:
 
             print(TEAMS[winner] + ", ", end = "")

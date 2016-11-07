@@ -39,7 +39,7 @@ class Linear_Regression:
                 #update weights using error and alpha
                 self.weights -= self.alpha * (error * example).reshape(x_cols, 1)
 
-    
+
     def test_fit(self, x_train, y_train, x_test, y_test):
 
         #convert data to numpy arrays of appropriate shape
@@ -57,19 +57,23 @@ class Linear_Regression:
 
         #initialize weights
         self.weights = np.zeros((x_cols, 1))
-        
+
         #lists of iteration errors to return
         train_mse_values = []
-        test_mse_values = []    
+        test_mse_values = []
 
         #train_accuracies = []
         #test_accuracies = []
 
-        train_log_loss = []
-        test_log_loss = []
+        #train_log_loss = []
+        #test_log_loss = []
 
         #learning iterations
         for i in range(self.iterations):
+
+            #example errors list
+            train_errors = []
+            test_errors = []
 
             #iterate over data examples (X rows)
             for example_index, example in enumerate(x_train):
@@ -80,50 +84,22 @@ class Linear_Regression:
                 #update weights using error and alpha
                 self.weights -= self.alpha * (error * example).reshape(x_cols, 1)
 
+            #calculate the train error
+            for train_example_index, train_example in enumerate(x_train):
 
+                train_errors.append(train_example.dot(self.weights) - y_train[train_example_index])
 
-
-        #learning iterations
-        for i in range(self.iterations):
-
-            #example errors list
-            train_errors = []
-            test_errors = []
-
-            #print("\nTest Errors")    
-
+            #calculate the test error
             for test_example_index, test_example in enumerate(x_test):
 
                 test_errors.append(test_example.dot(self.weights) - y_test[test_example_index])
 
-                #print(str(test_example.dot(self.weights)) + " - " + str(y_test[test_example_index])
-                #      + " = " + str(test_example.dot(self.weights) - y_test[test_example_index]))
-    
-            #print("\nTrain Errors")
-
-            #iterate over data examples (x_train rows)
-            for train_example_index, train_example in enumerate(x_train):
-
-                #compute example error using current weights
-                train_errors.append(train_example.dot(self.weights) - y_train[train_example_index])
-
-                #print(str(train_example.dot(self.weights)) + " - " + str(y_train[train_example_index])
-                #      + " = " + str(train_example.dot(self.weights) - y_train[train_example_index]))
-
-                #iterate over attributes of example
-                for attribute_index, attribute in enumerate(train_example):
-
-                    #update weights
-                    weight_adjustment = self.alpha * (train_errors[train_example_index] * train_example[attribute_index])
-                    self.weights[attribute_index] = self.weights[attribute_index] - weight_adjustment
-
-            
             #train_accuracies.append(metrics.accuracy(x_train.dot(self.weights), y_train))
             #test_accuracies.append(metrics.accuracy(x_test.dot(self.weights), y_test))
 
             #print(str(float(np.square(np.asarray(train_errors)).sum())) + " / " + str(len(train_errors))
             #      + " = " + str(float(np.square(np.asarray(train_errors)).sum()) / len(train_errors)))
-            
+
             #print(str(float(np.square(np.asarray(test_errors)).sum())) + " / " + str(len(test_errors))
             #      + " = " + str(float(np.square(np.asarray(test_errors)).sum()) / len(test_errors)))
 
@@ -131,19 +107,19 @@ class Linear_Regression:
             #test_log_loss.append(metrics.log_loss(x_test.dot(self.weights), y_test))
 
             #compute mean squared train error for current iteration
-            #train_mse_values.append(float(np.square(np.asarray(train_errors)).sum()) / len(train_errors))
-            #test_mse_values.append(float(np.square(np.asarray(test_errors)).sum()) / len(test_errors))                  
+            train_mse_values.append(float(np.square(np.asarray(train_errors)).sum()) / len(train_errors))
+            test_mse_values.append(float(np.square(np.asarray(test_errors)).sum()) / len(test_errors))
 
         #return iteration errors
-        return (train_log_loss, test_log_loss)
+        return (train_mse_values, test_mse_values)
 
 
     #make prediction using model weights and input data
     def predict(self, X):
-        
+
         #convert X to numpy aray
         X = np.asarray(X)
-    
+
         #add column of ones for intercept value
         X = np.c_[np.ones(X.shape[0]), X]
 
@@ -151,5 +127,5 @@ class Linear_Regression:
         #print(self.weights.shape)
 
         #multiply weights by input attributes and sum to get prediction
-        return (X.dot(self.weights))        
+        return (X.dot(self.weights))
 
