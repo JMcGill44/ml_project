@@ -45,8 +45,6 @@ class Tree:
             print(("\t" * depth) + "Split " + str(self.split_attribute) + " on " + str(self.split_value))
             self.left.print_tree(depth + 1)
             self.right.print_tree(depth + 1)
-
-
 class RegressionTree:
 
     def gini(self, probabilities):
@@ -106,9 +104,7 @@ class RegressionTree:
             min_split_val = 0
             min_gini_remainder = np.inf
 
-            #create a random subset of the features
-            indexes = np.random.choice(len(examples[0]), size = int(len(examples[0])/3), replace = False)
-            for column_index in indexes:
+            for column_index in range(len(examples[0])):
                 for row_index in range(len(examples)):
 
                     gr = self.gini_remainder(examples, labels, column_index, examples[row_index][column_index])
@@ -159,51 +155,10 @@ class RegressionTree:
 
         self.tree = self.grow_tree(examples, labels, 0)
 
-    def predict(self, examples):
+    def predict(self, example):
 
-        return self.tree.predict(examples)
+        return self.tree.predict(example)
 
     def print_tree(self):
 
         self.tree.print_tree(0)
-
-#Random Forest Regression
-class RandomForest:
-
-    def __init__(self, num_trees, max_depth, min_examples):
-        self.num_trees = num_trees
-        self.max_depth = max_depth
-        self.min_examples = min_examples
-        self.trees = []
-
-
-    def fit(self, examples, labels):
-
-        for tree in range(self.num_trees):
-
-            #sample a random set of examples from the dataset
-            indexes = np.random.choice(len(examples), size=len(examples), replace=True)
-            bagged_examples = [examples[i] for i in indexes]
-            bagged_labels = [labels[i] for i in indexes]
-
-            #fit the current tree to the random sample
-            new_tree = RegressionTree(self.max_depth, self.min_examples)
-            new_tree.fit(bagged_examples, bagged_labels)
-
-            #add the fitted tree to the forest's trees
-            self.trees.append(new_tree)
-
-
-    def predict(self, examples):
-
-        prediction_sums = [0] * len(examples)
-
-        for tree in self.trees:
-            predictions = tree.predict(examples)
-
-            for index, pred in enumerate(predictions):
-                prediction_sums[index] += pred
-
-        predictions = [float(pred)/self.num_trees for pred in prediction_sums]
-        return np.asarray(predictions).reshape(len(predictions), 1)
-

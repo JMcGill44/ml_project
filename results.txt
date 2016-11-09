@@ -1,0 +1,21 @@
+Random Forest (20)
+Accuracy: 0.626865671642
+LogLoss:  0.65211044447
+
+Random Forest (25)
+Accuracy: 0.597014925373
+LogLoss:  0.666087262918
+
+Random Forest (50)
+Accuracy: 0.686567164179
+LogLoss:  0.642335806097
+
+Random Forest (75)
+Accuracy: 0.597014925373
+LogLoss:  0.640898790096
+
+
+Random Forest (100)
+Accuracy: 0.701492537313
+LogLoss:  0.642326670849
+

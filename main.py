@@ -2,7 +2,7 @@ import data_module
 import metrics
 import linear_regression
 import random_forest
-
+import regression_tree
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -95,13 +95,17 @@ test_season = 2015
 x_train, y_train, x_test, y_test = data_module.data(test_season)
 
 
-if True:
+if False:
 
     iters = 1000
     alpha = .00001
-    accuracies = []
-    log_losses = []
+    accuracy_sum = 0
+    log_loss_sum = 0
+    best_bracket_sum = 0
+    avg_bracket_sum = 0
+
     for test_season in data_module.SEASONS[:-1]:
+
         print(test_season)
         x_train, y_train, x_test, y_test = data_module.data(test_season)
 
@@ -109,22 +113,24 @@ if True:
         train_errors, test_errors = lm.test_fit(x_train, y_train, x_test, y_test)
         y_pred = lm.predict(x_test)
 
-        accuracies.append(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1)))
-        log_losses.append(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1)))
         #lm = linear_model.LinearRegression()
         #lm.fit(x_train, y_train)
         #y_pred = np.asarray(lm.predict(x_test)).reshape(len(y_test), 1)
 
-        #print(y_pred)
+        accuracy_sum += metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
+        log_loss_sum += metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
 
-        print("\nLinear Model")
-        print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
-        print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
+        #print("\nLinear Model")
+        #print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
+        #print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
 
         best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(lm, test_season)
 
-        print("Best Score: " + str(best_bracket_score))
-        print("Avg Score : " + str(avg_bracket_score))
+        best_bracket_sum += best_bracket_score
+        avg_bracket_sum += avg_bracket_score
+
+        #print("Best Score: " + str(best_bracket_score))
+        #print("Avg Score : " + str(avg_bracket_score))
 
         #for game in sorted(best_bracket):
 
@@ -134,26 +140,70 @@ if True:
         #plt.plot(test_errors)
         #plt.ylim([0.24, 0.3])
         #plt.show()
-    print("Average Accuracy: " + str(float(sum(accuracies))/len(accuracies)))
-    print("Average Log Loss: " + str(float(sum(log_losses))/len(log_losses)))
+    print("Average Accuracy: " + str(float(accuracy_sum)/len(data_module.SEASONS[:-1])))
+    print("Average Log Loss: " + str(float(log_loss_sum)/len(data_module.SEASONS[:-1])))
+    print("Average Best Bracket: " + str(float(best_bracket_sum)/len(data_module.SEASONS[:-1])))
+    print("Average Avg Bracket: " + str(float(avg_bracket_sum)/len(data_module.SEASONS[:-1])))
 
-if False:
+if True:
 
-    rf = random_forest.RegressionTree(3, 0)
-    rf.fit(x_train, y_train)
-    y_pred = rf.predict(x_test)
+    accuracy_sum = 0
+    log_loss_sum = 0
+    best_bracket_sum = 0
+    avg_bracket_sum = 0
+    for test_season in data_module.SEASONS[:-1]:
 
-    rf.print_tree()
+        print("\n" + str(test_season))
 
-    print("\nDecision Tree")
-    print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
-    print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
+        x_train, y_train, x_test, y_test = data_module.data(test_season)
+        rf = regression_tree.RegressionTree(3, 0)
+        rf.fit(x_train, y_train)
+        y_pred = rf.predict(x_test)
 
-    best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(rf, test_season)
+        accuracy_sum += metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
+        log_loss_sum += metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
 
-    print("Best Score: " + str(best_bracket_score))
-    print("Avg Score : " + str(avg_bracket_score))
+
+        #rf.print_tree()
+
+        #print("\nDecision Tree")
+        print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
+        print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
+
+        best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(rf, test_season)
+        best_bracket_sum += best_bracket_score
+        avg_bracket_sum += avg_bracket_score
+        print("Best Score: " + str(best_bracket_score))
+        print("Avg Score : " + str(avg_bracket_score))
+
+    print("Average Accuracy: " + str(float(accuracy_sum)/len(data_module.SEASONS[:-1])))
+    print("Average Log Loss: " + str(float(log_loss_sum)/len(data_module.SEASONS[:-1])))
+    print("Average Best Bracket: " + str(float(best_bracket_sum)/len(data_module.SEASONS[:-1])))
+    print("Average Avg Bracket: " + str(float(avg_bracket_sum)/len(data_module.SEASONS[:-1])))
 
     #for game in sorted(best_bracket):
 
     #    print(str(game) + " : " + str(data_module.TEAMS[best_bracket[game]]))
+
+if False:
+    accuracy = 0
+    log_loss = 0
+    for test_season in data_module.SEASONS[:-1]:
+        print(test_season)
+        x_train, y_train, x_test, y_test = data_module.data(test_season)
+
+        rf = random_forest.RandomForest(75, 3, 5)
+        rf.fit(x_train, y_train)
+        y_pred = rf.predict(x_test)
+
+        accuracy += metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
+        log_loss += metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
+
+        #print("\nRandom Forest")
+        #print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
+        #print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
+
+    print("\nRandom Forest")
+    print("Accuracy: " + str(float(accuracy)/len(data_module.SEASONS[:-1])))
+    print("LogLoss:  " + str(float(log_loss)/len(data_module.SEASONS[:-1])))
+

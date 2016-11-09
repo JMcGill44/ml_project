@@ -1,9 +1,16 @@
 import sqlite3
 import numpy as np
+import linear_regression
+import metrics
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import ExtraTreesClassifier, RandomForestRegressor
+from sklearn.feature_selection import SelectFromModel
 
 #stats to consider
-#STATS = ['score', 'ftm', 'or', 'dr', 'ast', 'to', 'stl', 'blk']
-STATS = ['score', 'fgm', 'fga', 'fgm3', 'fga3', 'ftm', 'fta', 'or', 'dr', 'ast', 'to', 'stl', 'blk', 'pf']
+STATS = ['score', 'ftm', 'or', 'dr', 'ast', 'to', 'stl', 'blk']
+#STATS = ['score', 'fgm', 'fga', 'fgm3', 'fga3', 'ftm', 'fta', 'or', 'dr', 'ast', 'to', 'stl', 'blk', 'pf']
+#STATS = ['fgm', 'to', 'blk', 'or', 'fga', 'stl', 'dr', 'fga3']
+
 #seasons for which data exists
 SEASONS = range(2003, 2017)
 
@@ -375,9 +382,60 @@ if False:
 
         print("")
 
+#feature selection
 if False:
 
-    x_train, y_train, x_test, y_test = data()
+    #stats list to test
+    STATS = []
+    remaining_stats = ['score', 'fgm', 'fga', 'fgm3', 'fga3', 'ftm', 'fta', 'or', 'dr', 'ast', 'to', 'stl', 'blk', 'pf']
 
-    #TODO
+    for remaining_stat in range(len(remaining_stats)):
+
+        #running stat totals
+        avgs = [0]*len(remaining_stats)
+
+        #loop over the seasons and average the metric scores for each stat
+        for test_season in SEASONS[:-1]:
+            for index, test_stat in enumerate(remaining_stats):
+
+                #add the stat to the stats list to test
+                STATS.append(test_stat)
+
+                #get the data using the current test season and stats list
+                x_train, y_train, x_test, y_test = data(test_season)
+
+                #our linear model
+                #lm = linear_regression.Linear_Regression(alpha = .00001, iterations = 100)
+                #train_errors, test_errors = lm.test_fit(x_train, y_train, x_test, y_test)
+
+                #Sklearn's linear model
+                lm = LinearRegression()
+                lm.fit(x_train, y_train)
+
+                #predict the test set values
+                y_pred = lm.predict(x_test)
+                y_pred = y_pred.reshape(y_pred.shape[0], 1)
+
+                #calculate the appropriate metric value and add it to the running total
+                avgs[index] += metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
+                #avgs[index] += metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
+
+                #delete the stat from the stats list in order to test the next one
+                del STATS[-1]
+
+        #average the stat sums over the number of seasons
+        avgs = [float(stat_sum)/len(SEASONS[:-1]) for stat_sum in avgs]
+
+        #find the best value (min for logloss, max for accuracy)
+        best_val = min(avgs)
+        #best_val = max(avgs)
+
+        #add the best value to the current stat list
+        STATS.append(remaining_stats[avgs.index(best_val)])
+        print("\n" + str(remaining_stats[avgs.index(best_val)]) + ": " + str(best_val))
+        print(STATS)
+
+        #delete the best value from the remaining stat list
+        del remaining_stats[avgs.index(best_val)]
+
 
