@@ -35,7 +35,6 @@ class Tree:
         return np.asarray(predictions).reshape(len(predictions), 1)
 
     def print_tree(self, depth):
-
         if self.label is not None:
 
             print(("\t" * depth) + str(self.label))
@@ -147,7 +146,7 @@ class RegressionTree:
 
     def __init__(self, max_depth, min_examples):
 
-        self.max_depth = max_depth
+        self.max_depth = max_depth - 1
         self.min_examples = min_examples
         self.tree = None
 

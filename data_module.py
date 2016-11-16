@@ -7,9 +7,9 @@ from sklearn.ensemble import ExtraTreesClassifier, RandomForestRegressor
 from sklearn.feature_selection import SelectFromModel
 
 #stats to consider
-STATS = ['score', 'ftm', 'or', 'dr', 'ast', 'to', 'stl', 'blk']
+#STATS = ['score', 'ftm', 'or', 'dr', 'ast', 'to', 'stl', 'blk']
 #STATS = ['score', 'fgm', 'fga', 'fgm3', 'fga3', 'ftm', 'fta', 'or', 'dr', 'ast', 'to', 'stl', 'blk', 'pf']
-#STATS = ['fgm', 'to', 'blk', 'or', 'fga', 'stl', 'dr', 'fga3']
+STATS = ['fgm', 'to', 'blk', 'or', 'fga', 'stl', 'dr', 'fga3']
 
 #seasons for which data exists
 SEASONS = range(2003, 2017)

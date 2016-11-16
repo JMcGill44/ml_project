@@ -172,7 +172,7 @@ class RandomForest:
 
     def __init__(self, num_trees, max_depth, min_examples):
         self.num_trees = num_trees
-        self.max_depth = max_depth
+        self.max_depth = max_depth - 1
         self.min_examples = min_examples
         self.trees = []
 

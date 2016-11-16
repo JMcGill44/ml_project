@@ -1,0 +1,3 @@
+Random Forest (depth 1)
+Accuracy: 0.6096979047072331
+LogLoss:  0.6619651889550286
