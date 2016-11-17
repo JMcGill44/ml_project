@@ -9,7 +9,8 @@ from sklearn.feature_selection import SelectFromModel
 #stats to consider
 #STATS = ['score', 'ftm', 'or', 'dr', 'ast', 'to', 'stl', 'blk']
 #STATS = ['score', 'fgm', 'fga', 'fgm3', 'fga3', 'ftm', 'fta', 'or', 'dr', 'ast', 'to', 'stl', 'blk', 'pf']
-STATS = ['fgm', 'to', 'blk', 'or', 'fga', 'stl', 'dr', 'fga3']
+STATS = ['fgm', 'to', 'blk', 'or', 'fga', 'stl', 'dr', 'fga3', 'seed']
+#TODO
 
 #seasons for which data exists
 SEASONS = range(2003, 2017)
@@ -44,16 +45,30 @@ for team_id, team_name in results: TEAMS[team_id - TEAM_ID_OFFSET] = team_name
 #extract the per-game stat averages for the relevant stats for each team for a given season
 def regular_season_stats(season):
 
+    #remove seed from the stat list
+    season_stats = [stat for stat in STATS if stat != 'seed']
+
+    #number of stats in the stat list (except seed if it's there)
+    num_season_stats = len(season_stats)
+
     #list of number of games played for each team
     game_totals = [0]*NUM_TEAMS
 
     #list of stat total lists for each team
     stat_totals = []
-    for i in range(NUM_TEAMS): stat_totals.append([0]*len(STATS))
+    for i in range(NUM_TEAMS): stat_totals.append([0]*num_season_stats)
 
     #list of stat average lists for each team
     stat_averages = []
-    for i in range(NUM_TEAMS): stat_averages.append([0]*len(STATS))
+    for i in range(NUM_TEAMS): stat_averages.append([0]*num_season_stats)
+
+    #list of allowed stat total lists for each team
+    allowed_stat_totals = []
+    for i in range(NUM_TEAMS): allowed_stat_totals.append([0]*num_season_stats)
+
+    #list of allowed stat average lists for each team
+    allowed_stat_averages = []
+    for i in range(NUM_TEAMS): allowed_stat_averages.append([0]*num_season_stats)
 
     #connect to database
     conn = sqlite3.connect("./data/database.sqlite")
@@ -62,13 +77,19 @@ def regular_season_stats(season):
     #create query strings to extract team stat and game totals
     w_query = "SELECT Wteam, "
     l_query = "SELECT Lteam, "
+    w_allowed_query = "SELECT Wteam, "
+    l_allowed_query = "SELECT Lteam, "
 
-    for stat in STATS:
+    for stat in season_stats:
         w_query += "sum(w" + stat + "), "
         l_query += "sum(l" + stat + "), "
+        w_allowed_query += "sum(l" + stat + "), "
+        l_allowed_query += "sum(w" + stat + "), "
 
     w_query += "count(*) FROM RegularSeasonDetailedResults WHERE season = " + str(season) + " GROUP BY wteam"
     l_query += "count(*) FROM RegularSeasonDetailedResults WHERE season = " + str(season) + " GROUP BY lteam"
+    w_allowed_query += "count(*) FROM RegularSeasonDetailedResults WHERE season = " + str(season) + " GROUP BY wteam"
+    l_allowed_query += "count(*) FROM RegularSeasonDetailedResults WHERE season = " + str(season) + " GROUP BY lteam"
 
     #execute win query - extract information from games won by each time
     c.execute(w_query)
@@ -92,9 +113,6 @@ def regular_season_stats(season):
     #execute loss query - extract information from games lost by each team
     c.execute(l_query)
     l_results = c.fetchall()
-
-    #close database connection
-    conn.close()
 
     #iterate over l_query results - one for each team that lost at least one game
     for result in l_results:
@@ -122,16 +140,66 @@ def regular_season_stats(season):
             #divide all team stats by the number of games that team played to obtain stat averages
             stat_averages[team_index] = [float(stat_total) / game_totals[team_index] for stat_total in stat_totals[team_index]]
 
+    #execute win allowed query - extract opponent information from games won by each time
+    c.execute(w_allowed_query)
+    w_allowed_results = c.fetchall()
+
+    #iterate over w_query results - one for each team that won at least one game
+    for result in w_allowed_results:
+
+        #convert tuple to list
+        result_list = list(result)
+
+        #calculate team index from query result and offset
+        team_index = result_list[0] - TEAM_ID_OFFSET
+
+        #set allowed stat totals to the stats from games won
+        allowed_stat_totals[team_index] = result_list[1:-1]
+
+    #execute loss allowed query - extract information from games lost by each team
+    c.execute(l_allowed_query)
+    l_allowed_results = c.fetchall()
+
+    #close database connection
+    conn.close()
+
+    #iterate over l_allowed_query results - one for each team that lost at least one game
+    for result in l_allowed_results:
+
+        #convert tuple to list
+        result_list = list(result)
+
+        #calculate team index from query result and offset
+        team_index = result_list[0] - TEAM_ID_OFFSET
+
+        #iterate over result stats, adding them to the appropriate stat totals
+        for stat_index, stat in enumerate(result_list[1:-1]):
+
+            allowed_stat_totals[team_index][stat_index] += stat
+
+    #calculate stat averages using extracted allowed stat and game totals
+    for team_index in range(NUM_TEAMS):
+
+        #if stats exist for this team
+        if (game_totals[team_index] != 0):
+
+            #divide all team stats by the number of games that team played to obtain stat averages
+            allowed_stat_averages[team_index] = [float(stat_total) / game_totals[team_index] for stat_total in allowed_stat_totals[team_index]]
+
+    #calculate stat differentials (stat - allowed stat)
+    stat_differentials = np.asarray(stat_averages) - np.asarray(allowed_stat_averages)
+
     #normalize the stat averages for each team
-    stat_averages = np.asarray(stat_averages)
-    for stat in range(stat_averages.shape[1]):
-        mean = np.mean(stat_averages[:, stat])
-        std = np.std(stat_averages[:, stat])
-        stat_averages[:, stat] = (stat_averages[:, stat] - mean) / std
-    stat_averages = stat_averages.tolist()
+    for stat in range(stat_differentials.shape[1]):
+
+        mean = np.mean(stat_differentials[:, stat])
+        std = np.std(stat_differentials[:, stat])
+        stat_differentials[:, stat] = (stat_differentials[:, stat] - mean) / std
+
+    stat_differentials = stat_differentials.tolist()
 
     #return the stat averages for all teams
-    return stat_averages
+    return stat_differentials
 
 
 #extract the results of all tournament games for a given season
@@ -142,7 +210,12 @@ def tournament_results(season):
     c = conn.cursor()
 
     #create query string to extract winning and losing team id's for each tournament game for the given season
-    query = "SELECT Wteam, Lteam FROM TourneyCompactResults WHERE season = " + str(season)
+    #query = "SELECT Wteam, Lteam FROM TourneyCompactResults WHERE season = " + str(season)
+
+    query = ("""SELECT r.wteam, s1.seed, r.lteam, s2.seed
+               FROM TourneyCompactResults r, TourneySeeds s1, TourneySeeds s2
+               WHERE r.season = """ + str(season) + " and s1.season = " + str(season) + " AND s2.season = " + str(season) +
+               " AND r.wteam = s1.team AND r.lteam = s2.team;")
 
     #execute query
     c.execute(query)
@@ -158,10 +231,10 @@ def tournament_results(season):
     for results_index, result in enumerate(results):
 
         #even results - flip order of teams, add '0' label to indicate that the 1st team lost
-        if results_index % 2 == 0: mixed_results.append((result[1], result[0], 0))
+        if results_index % 2 == 0: mixed_results.append((result[2], result[3], result[0], result[1], 0))
 
         #odd results - retain order of teams, add '1' label to indicate that the 1st team won
-        else: mixed_results.append((result[0], result[1], 1))
+        else: mixed_results.append((result[0], result[1], result[2], result[3], 1))
 
     #return the mixed results
     return mixed_results
@@ -313,22 +386,35 @@ def data(test_season):
         #extract all stats once to avoid redundant queries
         season_stats = regular_season_stats(season)
 
-        #build test set
-        if season == test_season:
+        #iterate over tournament games, creating data and label lists
+        for team1_id, team1_seed, team2_id, team2_seed, label in tournament_results(season):
 
-            #iterate over tournament games, creating data and label lists
-            for wteam_id, lteam_id, label in tournament_results(season):
+            #convert seed string to appropriate int
+            team1_seed = team1_seed[1:]
+            team2_seed = team2_seed[1:]
+            if len(team1_seed) > 2: team1_seed = 17
+            if len(team2_seed) > 2: team2_seed = 17
+            team1_seed = int(team1_seed)
+            team2_seed = int(team2_seed)
 
-                x_test.append(season_stats[wteam_id - TEAM_ID_OFFSET] + season_stats[lteam_id - TEAM_ID_OFFSET])
+            #build test set
+            if season == test_season:
+
+                if 'seed' in STATS:
+                    x_test.append(season_stats[team1_id - TEAM_ID_OFFSET] + [team1_seed] + season_stats[team2_id - TEAM_ID_OFFSET] + [team2_seed])
+                else:
+                    x_test.append(season_stats[team1_id - TEAM_ID_OFFSET] + season_stats[team2_id - TEAM_ID_OFFSET])
+
                 y_test.append(label)
 
-        #build train set
-        else:
+            #build train set
+            else:
 
-            #iterate over tournament games, creating data and label lists
-            for wteam_id, lteam_id, label in tournament_results(season):
+                if 'seed' in STATS:
+                    x_train.append(season_stats[team1_id - TEAM_ID_OFFSET] + [team1_seed] + season_stats[team2_id - TEAM_ID_OFFSET] + [team2_seed])
+                else:
+                    x_train.append(season_stats[team1_id - TEAM_ID_OFFSET] + season_stats[team2_id - TEAM_ID_OFFSET])
 
-                x_train.append(season_stats[wteam_id - TEAM_ID_OFFSET] + season_stats[lteam_id - TEAM_ID_OFFSET])
                 y_train.append(label)
 
     #return data
@@ -337,6 +423,10 @@ def data(test_season):
 
 
 #TODO####################################### DEBUGGING OUTPUT #########################################
+
+if False:
+
+    data(2015)
 
 if False:
 
@@ -383,19 +473,24 @@ if False:
         print("")
 
 #feature selection
-if False:
+if True:
 
     #stats list to test
     STATS = []
-    remaining_stats = ['score', 'fgm', 'fga', 'fgm3', 'fga3', 'ftm', 'fta', 'or', 'dr', 'ast', 'to', 'stl', 'blk', 'pf']
+    remaining_stats = ['score', 'fgm', 'fga', 'fgm3', 'fga3', 'ftm', 'fta', 'or', 'dr', 'ast', 'to', 'stl', 'blk', 'pf', 'seed']
 
-    for remaining_stat in range(len(remaining_stats)):
+    while len(remaining_stats) > 0:
+
+        print("Remaining Stats: " + str(len(remaining_stats)))
 
         #running stat totals
         avgs = [0]*len(remaining_stats)
 
         #loop over the seasons and average the metric scores for each stat
         for test_season in SEASONS[:-1]:
+
+            print("Season: " + str(test_season))
+
             for index, test_stat in enumerate(remaining_stats):
 
                 #add the stat to the stats list to test
@@ -417,7 +512,7 @@ if False:
                 y_pred = y_pred.reshape(y_pred.shape[0], 1)
 
                 #calculate the appropriate metric value and add it to the running total
-                avgs[index] += metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
+                avgs[index] += metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1), 0.17276923076923073)
                 #avgs[index] += metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
 
                 #delete the stat from the stats list in order to test the next one

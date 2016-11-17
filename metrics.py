@@ -11,14 +11,14 @@ def accuracy(predicted_values, true_values):
     #create numpy arrays of true values and rounded predicted values (>= .5 --> 1, 0 otherwise)
     predicted_values = np.array(predicted_values).round()
     true_values = np.array(true_values)
-    
+
     #calculate and return accuracy = number of correctly predicted values / number of values
     return (predicted_values[:, 0] == true_values[:, 0]).sum() / len(predicted_values)
 
 
 #calculate the "LogLoss" metric of some predictions given lists of the predictions and the true values
-def log_loss(predicted_values, true_values):
-    
+def log_loss(predicted_values, true_values, offset):
+
     #convert input parameters to numpy arrays
     predicted_values = np.asarray(predicted_values)[:, 0]
     true_values = np.asarray(true_values)[:, 0]
@@ -27,28 +27,30 @@ def log_loss(predicted_values, true_values):
     #print(true_values)
 
     #offset from 0 and 1 for setting min/max probabilities
-    offset = .1 #TODO
-    
+    #offset = .1 #TODO
+    #print(offset)
     #bound probabilites at (offset, 1-offset)
+    lower_bound = offset
+    upper_bound = 1 - offset
     for predicted_value_index in range(len(predicted_values)):
-
-        if predicted_values[predicted_value_index] <= 0: predicted_values[predicted_value_index] = offset
-        if predicted_values[predicted_value_index] >= 1: predicted_values[predicted_value_index] = 1 - offset
+        #print(predicted_values[predicted_value_index])
+        if predicted_values[predicted_value_index] <= lower_bound: predicted_values[predicted_value_index] = lower_bound
+        if predicted_values[predicted_value_index] >= upper_bound: predicted_values[predicted_value_index] = upper_bound
 
     #print(np.log(predicted_values))
     #print(np.subtract(1, true_values) * np.log(np.subtract(1, predicted_values)))
 
     #calculate numerator of LogLoss
-    ll_n = (sum(true_values * np.log(predicted_values) + 
+    ll_n = (sum(true_values * np.log(predicted_values) +
                np.subtract(1, true_values) * np.log(np.subtract(1, predicted_values))))
-    
+
     #calculate and return LogLoss
     return (-ll_n) / len(predicted_values)
 
 
 #score a given bracket using ESPN's tournament challenge scoring system
 def bracket_score(predicted_bracket, true_bracket):
-    
+
     score = 0
 
     #iterate over tournament games, ordered by round w/ play in games at the end
@@ -56,7 +58,7 @@ def bracket_score(predicted_bracket, true_bracket):
 
         #correct prediction
         if predicted_bracket[game] in true_bracket[game]:
-    
+
             #give score depending on the round
             if (0 <= game_index <= 31): score += 10         #10 - round 2
             elif (32 <= game_index <= 47): score += 20      #20 - round 3
@@ -64,7 +66,7 @@ def bracket_score(predicted_bracket, true_bracket):
             elif (56 <= game_index <= 59): score += 80      #80 - round 5
             elif (60 <= game_index <= 61): score += 160     #160 - round 6
             elif game_index == 62: score += 320             #320 - championship
-    
+
     #return bracket score
     return score
 

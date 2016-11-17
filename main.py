@@ -5,15 +5,43 @@ import random_forest
 import regression_tree
 import numpy as np
 import matplotlib.pyplot as plt
+import sqlite3
 
 from sklearn import linear_model
 
 #number of brackets to generate for bracket scoring
 NUM_BRACKETS = 1000
 
+TEAM_ID_OFFSET = 1101
 
 #create a tournament bracket for the given season using the given model for predictions
 def create_and_score_bracket(model, season):
+
+    ### TODO ###
+    #connect to database
+    conn = sqlite3.connect("./data/database.sqlite")
+    c = conn.cursor()
+
+    #create query string extract seed information for all tournament teams for the given season
+    seeds_query = "SELECT Team, Seed FROM TourneySeeds WHERE season = " + str(season)
+
+    #execute query
+    c.execute(seeds_query)
+    results = c.fetchall()
+
+    #dictionary containing seed,team_id key,value pairs
+    team_seeds = {}
+
+    #iterate over seeds_query results - build dictionary
+    for team_id, seed in results:
+
+        #convert seed string to appropriate int
+        seed = seed[1:]
+        if len(seed) > 2: seed = 17
+        seed = int(seed)
+        team_seeds[team_id - TEAM_ID_OFFSET] = seed
+
+    ### TODO ###
 
     #get regular season stats, bracket, and bracket results for given season
     season_stats = data_module.regular_season_stats(season)
@@ -60,7 +88,10 @@ def create_and_score_bracket(model, season):
                 if team_2 not in range(data_module.NUM_TEAMS): team_2 = predicted_bracket[team_2]
 
                 #predict game result
-                p = model.predict(np.asarray(season_stats[team_1] + season_stats[team_2]).reshape(1, -1))
+                if 'seed' in data_module.STATS:
+                    p = model.predict(np.asarray(season_stats[team_1] + [team_seeds[team_1]] + season_stats[team_2] + [team_seeds[team_2]]).reshape(1, -1))
+                else:
+                    p = model.predict(np.asarray(season_stats[team_1] + season_stats[team_2]).reshape(1, -1))
 
                 #edge cases for probabilities
                 if (p < 0): p = 0
@@ -104,6 +135,9 @@ if False:
     best_bracket_sum = 0
     avg_bracket_sum = 0
 
+    #TODO
+    offset = 0.17276923076923073
+
     for test_season in data_module.SEASONS[:-1]:
 
         print(test_season)
@@ -118,7 +152,7 @@ if False:
         #y_pred = np.asarray(lm.predict(x_test)).reshape(len(y_test), 1)
 
         accuracy_sum += metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
-        log_loss_sum += metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
+        log_loss_sum += metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1), offset)
 
         #print("\nLinear Model")
         #print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
@@ -185,28 +219,86 @@ if False:
 
     #    print(str(game) + " : " + str(data_module.TEAMS[best_bracket[game]]))
 
-if True:
+if False:
+
+    #TODO experiment 2 after
+    num_trees = 75
+    depth = 8
+    min_samples = 15
+    features = 3
+    offset = 0.17276923076923073
+
+    #TODO experiment 2 before
+    num_trees = 50
+    depth = 4
+    min_samples = 5
+    features = 2
+    offset = 0.1
+
+    #for num_trees in [30, 40, 50, 60, 70]:
+    #for depth in [2, 4, 6, 8, 10]:
+    #for min_samples in [5, 10, 15, 20, 25]:
+    #for features in [2, 3, 4]:
+
     accuracy = 0
     log_loss = 0
-    depth = 10
 
-    for num_trees in [100]:
-        for test_season in data_module.SEASONS[:-1]:
-            print(test_season)
-            x_train, y_train, x_test, y_test = data_module.data(test_season)
+    for test_season in data_module.SEASONS[:-1]:
+        print(test_season)
+        x_train, y_train, x_test, y_test = data_module.data(test_season)
 
-            rf = random_forest.RandomForest(num_trees, depth, 5)
-            rf.fit(x_train, y_train)
-            y_pred = rf.predict(x_test)
+        rf = random_forest.RandomForest(num_trees, depth, min_samples, features)
+        rf.fit(x_train, y_train)
+        y_pred = rf.predict(x_test)
 
-            accuracy += metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
-            log_loss += metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
+        accuracy += metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
+        log_loss += metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1), offset)
 
-            #print("\nRandom Forest")
-            #print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
-            #print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
+        #print("\nRandom Forest")
+        #print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
+        #print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
 
-        print("\nRandom Forest")
-        print("Accuracy: " + str(float(accuracy)/len(data_module.SEASONS[:-1])))
-        print("LogLoss:  " + str(float(log_loss)/len(data_module.SEASONS[:-1])))
+    print("Random Forest")
+    print("Accuracy: " + str(float(accuracy)/len(data_module.SEASONS[:-1])))
+    print("LogLoss:  " + str(float(log_loss)/len(data_module.SEASONS[:-1])))
+
+if False:
+    test_season = 2012
+    iters = 1000
+    alpha = .00001
+
+    num_trees = 25
+    depth = 4
+    min_samples = 5
+    features = 2
+    avg_min_offset = 0
+    for test_season in data_module.SEASONS[:-1]:
+        x_train, y_train, x_test, y_test = data_module.data(test_season)
+
+        #rf = random_forest.RandomForest(num_trees, depth, min_samples, features)
+        rf = linear_regression.Linear_Regression(alpha = alpha, iterations = iters)
+        rf.fit(x_train, y_train)
+        y_pred = rf.predict(x_test)
+
+        #accuracy = metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
+        #log_loss = metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
+
+        #print("\nRandom Forest")
+        #print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
+        min_log_loss = np.inf
+        min_offset = np.inf
+        for i in range(1, 401):
+            offset = 0 + i * .001
+            log_loss = metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1), offset)
+            #print("LogLoss:  " + str(log_loss))
+
+            if log_loss < min_log_loss:
+                min_offset = offset
+                min_log_loss = log_loss
+
+        print("\nMin log loss: " + str(min_log_loss))
+        print("Min offset: " + str(min_offset))
+
+        avg_min_offset += min_offset
+    print("\nAverage Min offset: " + str(float(avg_min_offset)/len(data_module.SEASONS[:-1])))
 

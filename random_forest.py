@@ -107,7 +107,7 @@ class RegressionTree:
             min_gini_remainder = np.inf
 
             #create a random subset of the features
-            indexes = np.random.choice(len(examples[0]), size = int(len(examples[0])/3), replace = False)
+            indexes = np.random.choice(len(examples[0]), size = self.feature_bag_size, replace = False)
             for column_index in indexes:
                 for row_index in range(len(examples)):
 
@@ -149,11 +149,13 @@ class RegressionTree:
                 return Tree((float(sum(labels)) / len(labels)), None, None, None, None)
 
 
-    def __init__(self, max_depth, min_examples):
+    def __init__(self, max_depth, min_examples, feature_bag_size):
 
         self.max_depth = max_depth
         self.min_examples = min_examples
+        self.feature_bag_size = feature_bag_size
         self.tree = None
+
 
     def fit(self, examples, labels):
 
@@ -170,10 +172,11 @@ class RegressionTree:
 #Random Forest Regression
 class RandomForest:
 
-    def __init__(self, num_trees, max_depth, min_examples):
+    def __init__(self, num_trees, max_depth, min_examples, feature_bag_size):
         self.num_trees = num_trees
         self.max_depth = max_depth - 1
         self.min_examples = min_examples
+        self.feature_bag_size = feature_bag_size
         self.trees = []
 
 
@@ -187,7 +190,7 @@ class RandomForest:
             bagged_labels = [labels[i] for i in indexes]
 
             #fit the current tree to the random sample
-            new_tree = RegressionTree(self.max_depth, self.min_examples)
+            new_tree = RegressionTree(self.max_depth, self.min_examples, self.feature_bag_size)
             new_tree.fit(bagged_examples, bagged_labels)
 
             #add the fitted tree to the forest's trees
