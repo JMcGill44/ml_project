@@ -6,11 +6,11 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import ExtraTreesClassifier, RandomForestRegressor
 from sklearn.feature_selection import SelectFromModel
 
-#stats to consider
+#stats to consider TODO
 #STATS = ['score', 'ftm', 'or', 'dr', 'ast', 'to', 'stl', 'blk']
-#STATS = ['score', 'fgm', 'fga', 'fgm3', 'fga3', 'ftm', 'fta', 'or', 'dr', 'ast', 'to', 'stl', 'blk', 'pf']
-STATS = ['fgm', 'to', 'blk', 'or', 'fga', 'stl', 'dr', 'fga3', 'seed']
-#TODO
+#STATS = ['fgm', 'to', 'blk', 'or', 'fga', 'stl', 'dr', 'fga3']
+ALL_STATS = ['seed', 'score', 'fgm', 'fga', 'fgm3', 'fga3', 'ftm', 'fta', 'or', 'dr', 'ast', 'to', 'stl', 'blk', 'pf']
+STATS = ['seed', 'score', 'fgm3', 'fga3']
 
 #seasons for which data exists
 SEASONS = range(2003, 2017)
@@ -43,10 +43,11 @@ for team_id, team_name in results: TEAMS[team_id - TEAM_ID_OFFSET] = team_name
 
 
 #extract the per-game stat averages for the relevant stats for each team for a given season
-def regular_season_stats(season):
+def regular_season_stats(season, all_stats):
 
     #remove seed from the stat list
-    season_stats = [stat for stat in STATS if stat != 'seed']
+    if all_stats: season_stats = [stat for stat in ALL_STATS if stat != 'seed']
+    else: season_stats = [stat for stat in STATS if stat != 'seed']
 
     #number of stats in the stat list (except seed if it's there)
     num_season_stats = len(season_stats)
@@ -372,7 +373,7 @@ def brackets(season):
 
 
 #use other defined fuctions to get data in the desired form
-def data(test_season):
+def data(test_season, all_stats):
 
     x_train = []
     y_train = []
@@ -384,7 +385,7 @@ def data(test_season):
     for season in SEASONS:
 
         #extract all stats once to avoid redundant queries
-        season_stats = regular_season_stats(season)
+        season_stats = regular_season_stats(season, all_stats)
 
         #iterate over tournament games, creating data and label lists
         for team1_id, team1_seed, team2_id, team2_seed, label in tournament_results(season):
@@ -426,15 +427,11 @@ def data(test_season):
 
 if False:
 
-    data(2015)
-
-if False:
-
     for season in SEASONS:
 
         print("--------------------------- " + str(season) + " SEASON ---------------------------")
 
-        for team_index, stat_averages in enumerate(regular_season_stats(season)):
+        for team_index, stat_averages in enumerate(regular_season_stats(season, True)):
 
             print("\nTeam: " + str(team_index + TEAM_ID_OFFSET))
 
@@ -473,7 +470,7 @@ if False:
         print("")
 
 #feature selection
-if True:
+if False:
 
     #stats list to test
     STATS = []
@@ -497,7 +494,7 @@ if True:
                 STATS.append(test_stat)
 
                 #get the data using the current test season and stats list
-                x_train, y_train, x_test, y_test = data(test_season)
+                x_train, y_train, x_test, y_test = data(test_season, False)
 
                 #our linear model
                 #lm = linear_regression.Linear_Regression(alpha = .00001, iterations = 100)

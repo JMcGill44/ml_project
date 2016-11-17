@@ -1,0 +1,19 @@
+Experiment 1 (feature addition/selection)
+
+lm before - offset = 0.1, checkpoint 5 features (no differential & old list)
+lm after - offset = 0.1, checkpoint 6 features (differential & new list)
+
+rf before - old parameters, all stats (no seed, no differential)
+
+rf after - old parameters, all stats (seed, differential)
+
+Experiment 2 (Random forest parameters)
+
+lm before - lm after from above ^
+lm after - offset = special, checkpoint 6 features (differential & new list)
+
+rf before - rf after from above ^
+
+rf after - new parameters, all stats (seed, differential)
+
+
