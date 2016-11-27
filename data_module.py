@@ -530,4 +530,7 @@ if False:
         #delete the best value from the remaining stat list
         del remaining_stats[avgs.index(best_val)]
 
+if False:
+
+    print(tournament_results(2016))
 

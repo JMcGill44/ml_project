@@ -184,6 +184,9 @@ class RandomForest:
 
         for tree in range(self.num_trees):
 
+            #TODO
+            print(tree)
+
             #sample a random set of examples from the dataset
             indexes = np.random.choice(len(examples), size=len(examples), replace=True)
             bagged_examples = [examples[i] for i in indexes]

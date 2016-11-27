@@ -120,7 +120,7 @@ def create_and_score_bracket(model, season, all_stats):
 
 
 ######################################TODO######################################
-test_season = 2015
+test_season = 2016
 
 #get the train/test data
 x_train, y_train, x_test, y_test = data_module.data(test_season, False)
@@ -224,7 +224,7 @@ if False:
 
     #    print(str(game) + " : " + str(data_module.TEAMS[best_bracket[game]]))
 
-if True:
+if False:
 
     all_stats = True
 
@@ -315,4 +315,52 @@ if False:
 
         avg_min_offset += min_offset
     print("\nAverage Min offset: " + str(float(avg_min_offset)/len(data_module.SEASONS[:-1])))
+
+
+if False:
+
+    test_season = 2016
+    iters = 1000
+    alpha = .00001
+    all_stats = False
+    offset = 0.045307692307692306
+
+    x_train, y_train, x_test, y_test = data_module.data(test_season, all_stats)
+
+    lm = linear_regression.Linear_Regression(alpha = alpha, iterations = iters)
+    train_errors, test_errors = lm.test_fit(x_train, y_train, x_test, y_test)
+    y_pred = lm.predict(x_test)
+
+    best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(lm, test_season, all_stats)
+
+    print("\nLinear Model")
+    print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
+    print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1), offset)))
+    print("Best Score: " + str(best_bracket_score))
+    print("Avg Score : " + str(avg_bracket_score))
+
+if True:
+
+    test_season = 2016
+    all_stats = True
+    num_trees = 500
+    depth = 8
+    min_samples = 15
+    features = 3
+    offset = 0.045307692307692306
+
+
+    x_train, y_train, x_test, y_test = data_module.data(test_season, all_stats)
+
+    rf = random_forest.RandomForest(num_trees, depth, min_samples, features)
+    rf.fit(x_train, y_train)
+    y_pred = rf.predict(x_test)
+
+    best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(rf, test_season, all_stats)
+
+    print("\nRandom Forest " + str(test_season))
+    print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
+    print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1), offset)))
+    print("Best Score: " + str(best_bracket_score))
+    print("Avg Score : " + str(avg_bracket_score))
 
