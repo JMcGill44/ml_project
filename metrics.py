@@ -17,7 +17,7 @@ def accuracy(predicted_values, true_values):
 
 
 #calculate the "LogLoss" metric of some predictions given lists of the predictions and the true values
-def log_loss(predicted_values, true_values, offset):
+def log_loss(predicted_values, true_values):
 
     #convert input parameters to numpy arrays
     predicted_values = np.asarray(predicted_values)[:, 0]
@@ -25,17 +25,6 @@ def log_loss(predicted_values, true_values, offset):
 
     #print(predicted_values)
     #print(true_values)
-
-    #offset from 0 and 1 for setting min/max probabilities
-    #offset = .1 #TODO
-    #print(offset)
-    #bound probabilites at (offset, 1-offset)
-    lower_bound = offset
-    upper_bound = 1 - offset
-    for predicted_value_index in range(len(predicted_values)):
-        #print(predicted_values[predicted_value_index])
-        if predicted_values[predicted_value_index] <= lower_bound: predicted_values[predicted_value_index] = lower_bound
-        if predicted_values[predicted_value_index] >= upper_bound: predicted_values[predicted_value_index] = upper_bound
 
     #print(np.log(predicted_values))
     #print(np.subtract(1, true_values) * np.log(np.subtract(1, predicted_values)))

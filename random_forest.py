@@ -184,8 +184,7 @@ class RandomForest:
 
         for tree in range(self.num_trees):
 
-            #TODO
-            print(tree)
+            if tree % 10 == 0: print("  RF Tree Count: " + str(tree)) #TODO
 
             #sample a random set of examples from the dataset
             indexes = np.random.choice(len(examples), size=len(examples), replace=True)

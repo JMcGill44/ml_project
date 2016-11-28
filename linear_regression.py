@@ -1,7 +1,7 @@
 import numpy as np
 import metrics
 
-#linear model #TODO
+#linear model
 class Linear_Regression:
 
     #create model with given parameters
@@ -59,14 +59,14 @@ class Linear_Regression:
         self.weights = np.zeros((x_cols, 1))
 
         #lists of iteration errors to return
-        train_mse_values = []
-        test_mse_values = []
+        #train_mse_values = []
+        #test_mse_values = []
 
         #train_accuracies = []
         #test_accuracies = []
 
-        #train_log_loss = []
-        #test_log_loss = []
+        train_log_loss = []
+        test_log_loss = []
 
         #learning iterations
         for i in range(self.iterations):
@@ -103,15 +103,15 @@ class Linear_Regression:
             #print(str(float(np.square(np.asarray(test_errors)).sum())) + " / " + str(len(test_errors))
             #      + " = " + str(float(np.square(np.asarray(test_errors)).sum()) / len(test_errors)))
 
-            #train_log_loss.append(metrics.log_loss(x_train.dot(self.weights), y_train))
-            #test_log_loss.append(metrics.log_loss(x_test.dot(self.weights), y_test))
+            train_log_loss.append(metrics.log_loss(x_train.dot(self.weights), y_train))
+            test_log_loss.append(metrics.log_loss(x_test.dot(self.weights), y_test))
 
             #compute mean squared train error for current iteration
-            train_mse_values.append(float(np.square(np.asarray(train_errors)).sum()) / len(train_errors))
-            test_mse_values.append(float(np.square(np.asarray(test_errors)).sum()) / len(test_errors))
+            #train_mse_values.append(float(np.square(np.asarray(train_errors)).sum()) / len(train_errors))
+            #test_mse_values.append(float(np.square(np.asarray(test_errors)).sum()) / len(test_errors))
 
         #return iteration errors
-        return (train_mse_values, test_mse_values)
+        return (train_log_loss, test_log_loss)
 
 
     #make prediction using model weights and input data
@@ -123,9 +123,10 @@ class Linear_Regression:
         #add column of ones for intercept value
         X = np.c_[np.ones(X.shape[0]), X]
 
-        #print(X.shape)
-        #print(self.weights.shape)
-
         #multiply weights by input attributes and sum to get prediction
-        return (X.dot(self.weights))
+        prediction = X.dot(self.weights)
+
+        #TODO bound prediction        
+
+        return (prediction)
 
