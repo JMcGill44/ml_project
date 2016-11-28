@@ -125,160 +125,155 @@ test_season = 2016
 #get the train/test data
 x_train, y_train, x_test, y_test = data_module.data(test_season, False)
 
-
+#single Linear Regression
 if False:
 
+    #parameters
+    test_season = 2016
+    all_stats = False
     iters = 1000
     alpha = .00001
+    offset = 0.045307692307692306
+
+    x_train, y_train, x_test, y_test = data_module.data(test_season, all_stats)
+
+    lm = linear_regression.Linear_Regression(alpha = alpha, iterations = iters)
+    train_errors, test_errors = lm.test_fit(x_train, y_train, x_test, y_test)
+    y_pred = lm.predict(x_test)
+
+    best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(lm, test_season, all_stats)
+
+    print("Linear Regression " + str(test_season))
+    print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
+    print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1), offset)))
+    print("Best Score: " + str(best_bracket_score))
+    print("Avg Score : " + str(avg_bracket_score))
+
+
+#single Random Forest
+if False:
+
+    #parameters
+    test_season = 2016
+    all_stats = True
+    num_trees = 500
+    depth = 100
+    min_samples = 10
+    features = 10
+    offset = 0.045307692307692306
+
+    x_train, y_train, x_test, y_test = data_module.data(test_season, all_stats)
+
+    rf = random_forest.RandomForest(num_trees, depth, min_samples, features)
+    rf.fit(x_train, y_train)
+    y_pred = rf.predict(x_test)
+
+    best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(rf, test_season, all_stats)
+
+    print("Random Forest " + str(test_season))
+    print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
+    print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1), offset)))
+    print("Best Score: " + str(best_bracket_score))
+    print("Avg Score : " + str(avg_bracket_score))
+
+#cross-validated Linear Regression
+if False:
+
+    #parameters
+    test_season = 2016
+    all_stats = False
+    iters = 1000
+    alpha = .00001
+    offset = 0.045307692307692306
+
     accuracy_sum = 0
     log_loss_sum = 0
     best_bracket_sum = 0
     avg_bracket_sum = 0
 
-    #TODO
-    offset = 0.045307692307692306
-    #offset = 0.1
-
-    for test_season in data_module.SEASONS[:-1]:
-
-        all_stats = False
-
-        print(test_season)
-        x_train, y_train, x_test, y_test = data_module.data(test_season, all_stats)
-
-        lm = linear_regression.Linear_Regression(alpha = alpha, iterations = iters)
-        train_errors, test_errors = lm.test_fit(x_train, y_train, x_test, y_test)
-        y_pred = lm.predict(x_test)
-
-        #lm = linear_model.LinearRegression()
-        #lm.fit(x_train, y_train)
-        #y_pred = np.asarray(lm.predict(x_test)).reshape(len(y_test), 1)
-
-        accuracy_sum += metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
-        log_loss_sum += metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1), offset)
-
-        #print("\nLinear Model")
-        #print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
-        #print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
-
-        best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(lm, test_season, all_stats)
-
-        best_bracket_sum += best_bracket_score
-        avg_bracket_sum += avg_bracket_score
-
-        #print("Best Score: " + str(best_bracket_score))
-        #print("Avg Score : " + str(avg_bracket_score))
-
-        #for game in sorted(best_bracket):
-
-        #    print(str(game) + " : " + str(data_module.TEAMS[best_bracket[game]]))
-
-        #plt.plot(train_errors)
-        #plt.plot(test_errors)
-        #plt.ylim([0.24, 0.3])
-        #plt.show()
-    print("Average Accuracy: " + str(float(accuracy_sum)/len(data_module.SEASONS[:-1])))
-    print("Average Log Loss: " + str(float(log_loss_sum)/len(data_module.SEASONS[:-1])))
-    print("Average Best Bracket: " + str(float(best_bracket_sum)/len(data_module.SEASONS[:-1])))
-    print("Average Avg Bracket: " + str(float(avg_bracket_sum)/len(data_module.SEASONS[:-1])))
-
-if False:
-
-    all_stats = True
-
-    accuracy_sum = 0
-    log_loss_sum = 0
-    best_bracket_sum = 0
-    avg_bracket_sum = 0
-    for test_season in data_module.SEASONS[:-1]:
-
-        print("\n" + str(test_season))
+    #perform cross-validation on all seasons
+    for test_season in data_module.SEASONS:
 
         x_train, y_train, x_test, y_test = data_module.data(test_season, all_stats)
-        rf = regression_tree.RegressionTree(3, 0)
-        rf.fit(x_train, y_train)
-        y_pred = rf.predict(x_test)
-
-        accuracy_sum += metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
-        log_loss_sum += metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
-
-        print("Test")
-        rf.print_tree()
-
-        #print("\nDecision Tree")
-        print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
-        print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
-
-        best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(rf, test_season, all_stats)
-        best_bracket_sum += best_bracket_score
-        avg_bracket_sum += avg_bracket_score
-        print("Best Score: " + str(best_bracket_score))
-        print("Avg Score : " + str(avg_bracket_score))
-
-    print("Average Accuracy: " + str(float(accuracy_sum)/len(data_module.SEASONS[:-1])))
-    print("Average Log Loss: " + str(float(log_loss_sum)/len(data_module.SEASONS[:-1])))
-    print("Average Best Bracket: " + str(float(best_bracket_sum)/len(data_module.SEASONS[:-1])))
-    print("Average Avg Bracket: " + str(float(avg_bracket_sum)/len(data_module.SEASONS[:-1])))
-
-    #for game in sorted(best_bracket):
-
-    #    print(str(game) + " : " + str(data_module.TEAMS[best_bracket[game]]))
-
-if False:
-
-    all_stats = True
-
-    #TODO experiment 2 after
-    num_trees = 75
-    depth = 8
-    min_samples = 15
-    features = 3
-    offset = 0.045307692307692306
-
-    #TODO experiment 2 before
-    #num_trees = 50
-    #depth = 4
-    #min_samples = 5
-    #features = 2
-    #offset = 0.1
-
-    #for num_trees in [30, 40, 50, 60, 70]:
-    #for depth in [2, 4, 6, 8, 10]:
-    #for min_samples in [5, 10, 15, 20, 25]:
-    #for features in [2, 3, 4]:
-
-    accuracy = 0
-    log_loss = 0
-    best_bracket_sum = 0
-    avg_bracket_sum = 0
-
-    for test_season in data_module.SEASONS[:-1]:
-        print(test_season)
-        x_train, y_train, x_test, y_test = data_module.data(test_season, True)
 
         rf = random_forest.RandomForest(num_trees, depth, min_samples, features)
         rf.fit(x_train, y_train)
         y_pred = rf.predict(x_test)
 
-        accuracy += metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))
-        log_loss += metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1), offset)
+        test_season_accuracy = metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1)
+        test_season_logloss = metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1), offset)
+        accuracy_sum += test_season_accuracy
+        log_loss_sum += test_season_logloss
 
-        #print("\nRandom Forest")
-        #print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
-        #print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
-
-        best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(rf, test_season, all_stats)
+        best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(lm, test_season, all_stats)
         best_bracket_sum += best_bracket_score
         avg_bracket_sum += avg_bracket_score
+
+        #print metrics for each test season
+        #print("Linear Regression " + str(test_season))
+        #print("Accuracy: " + str(test_season_accuracy))
+        #print("LogLoss:  " + str(test_season_logloss))
         #print("Best Score: " + str(best_bracket_score))
-        #print("Avg Score : " + str(avg_bracket_score))
+        #print("Avg Score : " + str(avg_bracket_score) + "\n")
 
-    print("Random Forest")
-    print("Accuracy: " + str(float(accuracy)/len(data_module.SEASONS[:-1])))
-    print("LogLoss:  " + str(float(log_loss)/len(data_module.SEASONS[:-1])))
-    print("Average Best Bracket: " + str(float(best_bracket_sum)/len(data_module.SEASONS[:-1])))
-    print("Average Avg Bracket: " + str(float(avg_bracket_sum)/len(data_module.SEASONS[:-1])))
+    print("\nAverage Linear Regression")
+    print("Average Accuracy: " + str(float(accuracy_sum)/len(data_module.SEASONS)))
+    print("Average Log Loss: " + str(float(log_loss_sum)/len(data_module.SEASONS)))
+    print("Average Best Bracket: " + str(float(best_bracket_sum)/len(data_module.SEASONS)))
+    print("Average Avg Bracket: " + str(float(avg_bracket_sum)/len(data_module.SEASONS)))
 
+
+#cross-validated Random Forest
+if False:
+
+    #parameters
+    test_season = 2016
+    all_stats = True
+    num_trees = 500
+    depth = 100
+    min_samples = 10
+    features = 10
+    offset = 0.045307692307692306
+
+    accuracy_sum = 0
+    log_loss_sum = 0
+    best_bracket_sum = 0
+    avg_bracket_sum = 0
+
+    #perform cross-validation on all seasons
+    for test_season in data_module.SEASONS:
+
+        x_train, y_train, x_test, y_test = data_module.data(test_season, all_stats)
+
+        rf = linear_regression.Linear_Regression(alpha = alpha, iterations = iters)
+        train_errors, test_errors = lm.test_fit(x_train, y_train, x_test, y_test)
+        y_pred = lm.predict(x_test)
+
+        test_season_accuracy = metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1)
+        test_season_logloss = metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1), offset)
+        accuracy_sum += test_season_accuracy
+        log_loss_sum += test_season_logloss
+
+        best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(lm, test_season, all_stats)
+        best_bracket_sum += best_bracket_score
+        avg_bracket_sum += avg_bracket_score
+
+        #print metrics for each test season
+        #print("Random Forest " + str(test_season))
+        #print("Accuracy: " + str(test_season_accuracy))
+        #print("LogLoss:  " + str(test_season_logloss))
+        #print("Best Score: " + str(best_bracket_score))
+        #print("Avg Score : " + str(avg_bracket_score) + "\n")
+
+    print("\nAverage Random Forest")
+    print("Average Accuracy: " + str(float(accuracy_sum)/len(data_module.SEASONS)))
+    print("Average Log Loss: " + str(float(log_loss_sum)/len(data_module.SEASONS)))
+    print("Average Best Bracket: " + str(float(best_bracket_sum)/len(data_module.SEASONS)))
+    print("Average Avg Bracket: " + str(float(avg_bracket_sum)/len(data_module.SEASONS)))
+
+######################################TODO######################################
+
+#offset stuff
 if False:
 
     iters = 1000
@@ -286,7 +281,7 @@ if False:
 
     avg_min_offset = 0
 
-    for test_season in data_module.SEASONS[:-1]:
+    for test_season in data_module.SEASONS:
 
         x_train, y_train, x_test, y_test = data_module.data(test_season, False)
 
@@ -314,53 +309,5 @@ if False:
         print("Min offset: " + str(min_offset))
 
         avg_min_offset += min_offset
-    print("\nAverage Min offset: " + str(float(avg_min_offset)/len(data_module.SEASONS[:-1])))
-
-
-if False:
-
-    test_season = 2016
-    iters = 1000
-    alpha = .00001
-    all_stats = False
-    offset = 0.045307692307692306
-
-    x_train, y_train, x_test, y_test = data_module.data(test_season, all_stats)
-
-    lm = linear_regression.Linear_Regression(alpha = alpha, iterations = iters)
-    train_errors, test_errors = lm.test_fit(x_train, y_train, x_test, y_test)
-    y_pred = lm.predict(x_test)
-
-    best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(lm, test_season, all_stats)
-
-    print("\nLinear Model")
-    print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
-    print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1), offset)))
-    print("Best Score: " + str(best_bracket_score))
-    print("Avg Score : " + str(avg_bracket_score))
-
-if True:
-
-    test_season = 2016
-    all_stats = True
-    num_trees = 500
-    depth = 8
-    min_samples = 15
-    features = 3
-    offset = 0.045307692307692306
-
-
-    x_train, y_train, x_test, y_test = data_module.data(test_season, all_stats)
-
-    rf = random_forest.RandomForest(num_trees, depth, min_samples, features)
-    rf.fit(x_train, y_train)
-    y_pred = rf.predict(x_test)
-
-    best_bracket, best_bracket_score, avg_bracket_score = create_and_score_bracket(rf, test_season, all_stats)
-
-    print("\nRandom Forest " + str(test_season))
-    print("Accuracy: " + str(metrics.accuracy(y_pred, np.asarray(y_test).reshape(len(y_test), 1))))
-    print("LogLoss:  " + str(metrics.log_loss(y_pred, np.asarray(y_test).reshape(len(y_test), 1), offset)))
-    print("Best Score: " + str(best_bracket_score))
-    print("Avg Score : " + str(avg_bracket_score))
+    print("\nAverage Min offset: " + str(float(avg_min_offset)/len(data_module.SEASONS)))
 
