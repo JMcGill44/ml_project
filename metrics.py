@@ -3,11 +3,6 @@ import numpy as np
 #calculate the "accuracy" metric of some predictions given lists of the predictions and the true values
 def accuracy(predicted_values, true_values):
 
-    #for pv, tv in zip(predicted_values, true_values):
-    #    print(str(pv) + " : " + str(tv))
-
-    #TODO rounding and fix the return list thingy dumb thing
-
     #create numpy arrays of true values and rounded predicted values (>= .5 --> 1, 0 otherwise)
     predicted_values = np.array(predicted_values).round()
     true_values = np.array(true_values)
@@ -22,12 +17,6 @@ def log_loss(predicted_values, true_values):
     #convert input parameters to numpy arrays
     predicted_values = np.asarray(predicted_values)[:, 0]
     true_values = np.asarray(true_values)[:, 0]
-
-    #print(predicted_values)
-    #print(true_values)
-
-    #print(np.log(predicted_values))
-    #print(np.subtract(1, true_values) * np.log(np.subtract(1, predicted_values)))
 
     #calculate numerator of LogLoss
     ll_n = (sum(true_values * np.log(predicted_values) +

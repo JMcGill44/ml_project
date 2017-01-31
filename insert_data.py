@@ -1,11 +1,13 @@
 import sqlite3
 
+#connect to the database
 conn = sqlite3.connect("./data/database.sqlite")
 c = conn.cursor()
 
 # season (2016), day (0), wteam_id, wteam_score (0), lteam_id, lteam_score (0), wlocation, (N), numot (0)
 query = "INSERT INTO TourneyCompactResults VALUES (2016, 0, wteam, 0, lteam, 0, 'N', 0);"
 
+#tournament information for the 2016 March Madness Tournament
 games = [(1455, 1435),
         (1195, 1192),
         (1276, 1409),
@@ -74,9 +76,11 @@ games = [(1455, 1435),
         (1314, 1393),
         (1437, 1314)]
 
+#insert the 2016 tournament information into the database
 for wteam, lteam in games:
     query = "INSERT INTO TourneyCompactResults VALUES (2016, 0, " + str(wteam) + ", 0, " + str(lteam) +", 0, 'N', 0);"
     c.execute(query)
 
+#commit and close the database connection
 conn.commit()
 conn.close()

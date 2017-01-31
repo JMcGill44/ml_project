@@ -6,11 +6,21 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import ExtraTreesClassifier, RandomForestRegressor
 from sklearn.feature_selection import SelectFromModel
 
-#stats to consider TODO
-#STATS = ['score', 'ftm', 'or', 'dr', 'ast', 'to', 'stl', 'blk']
-#STATS = ['fgm', 'to', 'blk', 'or', 'fga', 'stl', 'dr', 'fga3']
-ALL_STATS = ['seed', 'score', 'fgm', 'fga', 'fgm3', 'fga3', 'ftm', 'fta', 'or', 'dr', 'ast', 'to', 'stl', 'blk', 'pf']
-STATS = ['seed', 'score', 'fgm3', 'fga3']
+#toggle the seed feature for experiment 3
+USE_SEED = True
+
+#toggle normalization for experiment 4
+NORMALIZATION = True
+
+if USE_SEED:
+	#stats to consider (with seed)
+	ALL_STATS = ['seed', 'score', 'fgm', 'fga', 'fgm3', 'fga3', 'ftm', 'fta', 'or', 'dr', 'ast', 'to', 'stl', 'blk', 'pf']
+	STATS = ['seed', 'score', 'fgm3', 'fga3']
+
+else:
+	#stats to consider
+	ALL_STATS = ['score', 'fgm', 'fga', 'fgm3', 'fga3', 'ftm', 'fta', 'or', 'dr', 'ast', 'to', 'stl', 'blk', 'pf']
+	STATS = ['score', 'fgm3', 'fga3']
 
 #seasons for which data exists
 SEASONS = range(2003, 2017)
@@ -189,13 +199,16 @@ def regular_season_stats(season, all_stats):
 
     #calculate stat differentials (stat - allowed stat)
     stat_differentials = np.asarray(stat_averages) - np.asarray(allowed_stat_averages)
+	
+	#toggles data normalization
+	if NORMALIZATION:
+	
+		#normalize the stat averages for each team
+		for stat in range(stat_differentials.shape[1]):
 
-    #normalize the stat averages for each team
-    for stat in range(stat_differentials.shape[1]):
-
-        mean = np.mean(stat_differentials[:, stat])
-        std = np.std(stat_differentials[:, stat])
-        stat_differentials[:, stat] = (stat_differentials[:, stat] - mean) / std
+			mean = np.mean(stat_differentials[:, stat])
+			std = np.std(stat_differentials[:, stat])
+			stat_differentials[:, stat] = (stat_differentials[:, stat] - mean) / std
 
     stat_differentials = stat_differentials.tolist()
 
@@ -422,53 +435,6 @@ def data(test_season, all_stats):
     return x_train, y_train, x_test, y_test
 
 
-
-#TODO####################################### DEBUGGING OUTPUT #########################################
-
-if False:
-
-    for season in SEASONS:
-
-        print("--------------------------- " + str(season) + " SEASON ---------------------------")
-
-        for team_index, stat_averages in enumerate(regular_season_stats(season, True)):
-
-            print("\nTeam: " + str(team_index + TEAM_ID_OFFSET))
-
-            for stat_index, stat_average in enumerate(stat_averages):
-
-                print(str(STATS[stat_index]) + "/game : " + str(stat_average))
-
-if False:
-
-    for season in SEASONS[:-1]:
-
-        print("--------------------------- " + str(season) + " SEASON ---------------------------")
-
-        for team1, team2, label in tournament_results(season):
-
-            print(str(team1) + " - " + str(team2) + " : " + str(label))
-
-if False:
-
-    bracket, true_bracket = brackets(2015)
-
-    for slot in bracket.keys():
-
-        print(str(slot) + ": " + str(bracket[slot][0]) + " vs. " + str(bracket[slot][1]))
-
-    print("\n")
-
-    for slot in true_bracket.keys():
-
-        print(str(slot) + ": ", end = "")
-
-        for winner in true_bracket[slot]:
-
-            print(TEAMS[winner] + ", ", end = "")
-
-        print("")
-
 #feature selection
 if False:
 
@@ -529,8 +495,3 @@ if False:
 
         #delete the best value from the remaining stat list
         del remaining_stats[avgs.index(best_val)]
-
-if False:
-
-    print(tournament_results(2016))
-

@@ -58,13 +58,6 @@ class Linear_Regression:
         #initialize weights
         self.weights = np.zeros((x_cols, 1))
 
-        #lists of iteration errors to return
-        #train_mse_values = []
-        #test_mse_values = []
-
-        #train_accuracies = []
-        #test_accuracies = []
-
         train_log_loss = []
         test_log_loss = []
 
@@ -93,22 +86,10 @@ class Linear_Regression:
             for test_example_index, test_example in enumerate(x_test):
 
                 test_errors.append(test_example.dot(self.weights) - y_test[test_example_index])
-
-            #train_accuracies.append(metrics.accuracy(x_train.dot(self.weights), y_train))
-            #test_accuracies.append(metrics.accuracy(x_test.dot(self.weights), y_test))
-
-            #print(str(float(np.square(np.asarray(train_errors)).sum())) + " / " + str(len(train_errors))
-            #      + " = " + str(float(np.square(np.asarray(train_errors)).sum()) / len(train_errors)))
-
-            #print(str(float(np.square(np.asarray(test_errors)).sum())) + " / " + str(len(test_errors))
-            #      + " = " + str(float(np.square(np.asarray(test_errors)).sum()) / len(test_errors)))
-
+			
+			#calculate the logloss
             train_log_loss.append(metrics.log_loss(x_train.dot(self.weights), y_train))
             test_log_loss.append(metrics.log_loss(x_test.dot(self.weights), y_test))
-
-            #compute mean squared train error for current iteration
-            #train_mse_values.append(float(np.square(np.asarray(train_errors)).sum()) / len(train_errors))
-            #test_mse_values.append(float(np.square(np.asarray(test_errors)).sum()) / len(test_errors))
 
         #return iteration errors
         return (train_log_loss, test_log_loss)
@@ -125,8 +106,6 @@ class Linear_Regression:
 
         #multiply weights by input attributes and sum to get prediction
         prediction = X.dot(self.weights)
-
-        #TODO bound prediction        
 
         return (prediction)
 
