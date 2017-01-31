@@ -1,0 +1,68 @@
+R2X4: Iowa St
+R1Y1: Kansas
+R3Z1: Oregon
+R1X3: Utah
+R3Y2: Villanova
+R1W3: West Virginia
+R1X5: Purdue
+R1Z7: Oregon St
+R1W4: Kentucky
+R2Z4: Yale
+R2Y1: Kansas
+R2Z3: Northern Iowa
+R2W3: Notre Dame
+R3X1: Virginia
+R1Z6: Northern Iowa
+R1Y7: Temple
+R1Z4: UNC Wilmington
+R1Y2: Villanova
+R4Z1: Oklahoma
+R3W2: Notre Dame
+R4W1: North Carolina
+R1W6: Notre Dame
+R5YZ: Villanova
+R3Z2: Oklahoma
+R2Z1: Oregon
+R2X2: Dayton
+R2Y3: Miami FL
+R1Y8: Connecticut
+R1W7: Wisconsin
+R1W8: Providence
+R1Z8: Cincinnati
+R4Y1: Villanova
+R6CH: Villanova
+R1X4: Iowa St
+W16: FL Gulf Coast
+R3W1: North Carolina
+R1W1: North Carolina
+R1W5: Chattanooga
+R1Z3: Texas A&M
+R2W2: Xavier
+R4X1: Gonzaga
+R3Y1: Kansas
+R2X1: Virginia
+R1X1: Virginia
+R2W1: North Carolina
+R1Z5: Yale
+R1X2: MTSU
+R1Y4: Hawaii
+R1X7: Dayton
+Z16: Southern Univ
+W11: Michigan
+R1W2: Xavier
+R2Z2: Oklahoma
+R1X6: Gonzaga
+R2X3: Gonzaga
+R1Y3: Miami FL
+R2Y2: Villanova
+R1Z2: Oklahoma
+R2W4: Kentucky
+Y11: Vanderbilt
+R2Y4: Maryland
+R1Z1: Oregon
+R1Y6: Arizona
+R5WX: North Carolina
+R1X8: Butler
+R3X2: Gonzaga
+R1Y5: Maryland
+
